@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Narrow rpcd adapter. Configuration is handled through a package-scoped UCI
+# ACL; this object only exposes status and guarded manual apply.
+
+PATH="${NAT6_PATH:-/usr/sbin:/usr/bin:/sbin:/bin}"
+NAT6_SCRIPT="${NAT6_SCRIPT:-/usr/nft-nat6.sh}"
+
+emit_missing() {
+	printf '%s\n' '{"ok":false,"ready":false,"error":"nft-nat6-script-missing","interfaces":[],"nat":{"present":false,"wan_count":0,"rule_count":0,"expected_rule_count":0,"profile":"unknown"}}'
+}
+
+emit_status() {
+	if [ ! -x "$NAT6_SCRIPT" ]; then
+		emit_missing
+		return 0
+	fi
+	result="$($NAT6_SCRIPT status 2>/dev/null)"
+	rc="$?"
+	if [ "$rc" -eq 0 ] && [ -n "$result" ]; then
+		printf '%s\n' "$result"
+	else
+		printf '%s\n' '{"ok":false,"ready":false,"error":"status-failed-check-logread","interfaces":[],"nat":{"present":false,"wan_count":0,"rule_count":0,"expected_rule_count":0,"profile":"unknown"}}'
+	fi
+}
+
+apply_rules() {
+	if [ ! -x "$NAT6_SCRIPT" ]; then
+		printf '%s\n' '{"ok":false,"code":127,"error":"nft-nat6-script-missing"}'
+		return 0
+	fi
+	"$NAT6_SCRIPT" apply >/dev/null 2>&1
+	rc="$?"
+	if [ "$rc" -eq 0 ]; then
+		printf '%s\n' '{"ok":true,"code":0}'
+	else
+		printf '{"ok":false,"code":%s,' "$rc"
+		printf '%s\n' '"error":"apply-failed-check-logread"}'
+	fi
+}
+
+case "$1" in
+list)
+	printf '%s\n' '{"status":{},"apply":{}}'
+	;;
+call)
+	case "$2" in
+	status) emit_status ;;
+	apply) apply_rules ;;
+	*)
+		printf '%s\n' '{"error":"unknown-method"}'
+		exit 1
+		;;
+	esac
+	;;
+*)
+	printf '%s\n' '{"error":"expected-list-or-call"}'
+	exit 1
+	;;
+esac

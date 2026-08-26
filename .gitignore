@@ -1,0 +1,17 @@
+*.ipk
+*.apk
+*.log
+.config
+build_dir/
+staging_dir/
+tmp/
+bin/
+
+# Local build and production-research evidence; never publish these files.
+dist/
+test-results/
+handoff/
+research/
+CONTEXT_HANDOFF.md
+CODEX_PROJECT_SCOPE.md
+.DS_Store

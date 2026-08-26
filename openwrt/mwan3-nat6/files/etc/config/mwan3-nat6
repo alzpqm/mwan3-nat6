@@ -1,0 +1,15 @@
+config globals 'globals'
+	option table 'mwan3_nat6'
+
+# Add at least two enabled WAN sections through LuCI or UCI before applying.
+# Device and expected_prefix_length are optional safety checks. When omitted,
+# the current netifd l3_device and delegated-prefix length are accepted.
+#
+# config wan
+#	option enabled '1'
+#	option label 'WAN 1'
+#	option interface 'wan1_6'
+#	option device 'pppoe-provider-a'
+#	option expected_prefix_length '56'
+#	option address_index '0'
+#	option prefix_index '0'
