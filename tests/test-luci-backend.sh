@@ -44,7 +44,7 @@ cat >"$CASE_DIR/bin/nft-nat6.sh" <<'EOF'
 case "$1" in
 status)
 	[ "${MOCK_STATUS_FAIL:-0}" != '1' ] || exit 1
-	printf '%s\n' '{"ok":true,"ready":true,"interfaces":[{"label":"WAN 1","logical":"wan1_6","device":"test-uplink-1","state":"ready"},{"label":"WAN 2","logical":"wan2_6","device":"test-uplink-2","state":"ready"}],"nat":{"table":"mwan3_nat6","present":true,"wan_count":2,"rule_count":4,"expected_rule_count":4,"profile":"managed"}}'
+	printf '%s\n' '{"ok":true,"ready":true,"all_ready":true,"degraded":false,"policy_ready":true,"interfaces":[{"label":"WAN 1","logical":"wan1_6","device":"test-uplink-1","state":"ready","tracker":{"tracked":true,"state":"online","score":10}},{"label":"WAN 2","logical":"wan2_6","device":"test-uplink-2","state":"ready","tracker":{"tracked":false,"state":"untracked","score":0}}],"nat":{"table":"mwan3_nat6","present":true,"wan_count":2,"active_wan_count":2,"inactive_wan_count":0,"rule_count":4,"expected_rule_count":4,"profile":"managed"},"local_icmp":{"enabled":true,"present":true,"rule_count":2,"expected_rule_count":2,"mark":"0x3f00","profile":"managed"},"monitor":{"enabled":true,"interval":15,"debounce":2,"refresh_mwan3":false}}'
 	;;
 apply)
 	printf '%s\n' apply >>"$MOCK_STATE/apply.calls"
@@ -65,8 +65,11 @@ assert_contains '"apply":{}' "$CASE_DIR/stdout"
 run_backend call status
 [ "$CASE_RC" -eq 0 ] || fail "status returned $CASE_RC"
 assert_contains '"wan_count":2' "$CASE_DIR/stdout"
+assert_contains '"active_wan_count":2' "$CASE_DIR/stdout"
+assert_contains '"degraded":false' "$CASE_DIR/stdout"
 assert_contains '"expected_rule_count":4' "$CASE_DIR/stdout"
 assert_contains '"profile":"managed"' "$CASE_DIR/stdout"
+assert_contains '"local_icmp":{"enabled":true' "$CASE_DIR/stdout"
 
 MOCK_STATUS_FAIL=1 run_backend call status
 [ "$CASE_RC" -eq 0 ] || fail "failed status transport returned $CASE_RC"
@@ -97,6 +100,15 @@ grep -Fq "new form.Map('mwan3-nat6'" "$SETTINGS" ||
 	fail 'LuCI settings view does not manage the package-scoped UCI config'
 grep -Fq "form.GridSection, 'wan'" "$SETTINGS" ||
 	fail 'LuCI settings view lacks dynamic WAN sections'
+grep -Fq "'monitor'" "$SETTINGS" || fail 'LuCI settings view lacks renewal monitor control'
+grep -Fq "'refresh_mwan3_after_nat'" "$SETTINGS" ||
+	fail 'LuCI settings view lacks the renamed default-off compatibility option'
+grep -Fq "'pin_local_icmp'" "$SETTINGS" ||
+	fail 'LuCI settings view lacks router-local ICMP pin control'
+grep -Fq 'localIcmp.profile' "$VIEW" ||
+	fail 'LuCI status view lacks router-local ICMP pin state'
+grep -Fq 'active_wan_count' "$VIEW" || fail 'LuCI status view lacks ready-subset state'
+grep -Fq 'item.tracker' "$VIEW" || fail 'LuCI status view lacks mwan3 tracker state'
 if command -v node >/dev/null 2>&1; then
 	node --check "$VIEW" >/dev/null
 	node --check "$SETTINGS" >/dev/null

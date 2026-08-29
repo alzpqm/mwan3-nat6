@@ -12,8 +12,8 @@ fail() {
 }
 
 [ -s "$COMPARISON" ] || fail 'comparison protocol is missing'
-grep -Fq 'WAN_COUNT * WAN_COUNT' "$CURRENT" ||
-	fail 'current source no longer implements the N-squared rule model'
+grep -Fq 'READY_WAN_COUNT * READY_WAN_COUNT' "$CURRENT" ||
+	fail 'current source no longer implements the ready-subset N-squared rule model'
 
 grep -Fq 'nft -c -f "$RULE_FILE"' "$CURRENT" ||
 	fail 'hardened source lacks nft validation'

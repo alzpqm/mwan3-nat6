@@ -1,5 +1,10 @@
 config globals 'globals'
 	option table 'mwan3_nat6'
+	option monitor '0'
+	option interval '15'
+	option debounce '2'
+	option refresh_mwan3_after_nat '0'
+	option pin_local_icmp '0'
 
 # Add at least two enabled WAN sections through LuCI or UCI before applying.
 # Device and expected_prefix_length are optional safety checks. When omitted,
@@ -9,7 +14,7 @@ config globals 'globals'
 #	option enabled '1'
 #	option label 'WAN 1'
 #	option interface 'wan1_6'
-#	option device 'pppoe-provider-a'
+#	option device 'pppoe-wan1'
 #	option expected_prefix_length '56'
 #	option address_index '0'
 #	option prefix_index '0'

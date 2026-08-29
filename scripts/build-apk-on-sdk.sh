@@ -35,7 +35,9 @@ SCRIPT_ROOT="$BUILD_ROOT/scripts"
 
 install -d \
 	"$CORE_ROOT/etc/config" \
+	"$CORE_ROOT/etc/init.d" \
 	"$CORE_ROOT/lib/apk/packages" \
+	"$CORE_ROOT/usr/sbin" \
 	"$CORE_ROOT/usr/share/doc/mwan3-nat6" \
 	"$LUCI_ROOT/lib/apk/packages" \
 	"$LUCI_ROOT/usr/libexec/rpcd" \
@@ -46,8 +48,12 @@ install -d \
 
 install -m 0644 "$PROJECT_ROOT/openwrt/mwan3-nat6/files/etc/config/mwan3-nat6" \
 	"$CORE_ROOT/etc/config/mwan3-nat6"
+install -m 0755 "$PROJECT_ROOT/openwrt/mwan3-nat6/files/etc/init.d/mwan3-nat6" \
+	"$CORE_ROOT/etc/init.d/mwan3-nat6"
 install -m 0755 "$PROJECT_ROOT/openwrt/mwan3-nat6/files/usr/nft-nat6.sh" \
 	"$CORE_ROOT/usr/nft-nat6.sh"
+install -m 0755 "$PROJECT_ROOT/openwrt/mwan3-nat6/files/usr/sbin/mwan3-nat6-watch" \
+	"$CORE_ROOT/usr/sbin/mwan3-nat6-watch"
 install -m 0644 "$PROJECT_ROOT/NAT6_HANDOFF.md" \
 	"$CORE_ROOT/usr/share/doc/mwan3-nat6/NAT6_HANDOFF.md"
 
@@ -86,6 +92,11 @@ export root="${IPKG_INSTROOT}"
 export pkgname="mwan3-nat6"
 add_group_and_user
 default_postinst
+[ -n "${IPKG_INSTROOT}" ] || {
+	/etc/init.d/mwan3-nat6 enable >/dev/null 2>&1 || :
+	/etc/init.d/mwan3-nat6 restart >/dev/null 2>&1 || :
+}
+exit 0
 EOF
 cat >"$SCRIPT_ROOT/core-post-upgrade" <<'EOF'
 #!/bin/sh
@@ -97,9 +108,15 @@ export root="${IPKG_INSTROOT}"
 export pkgname="mwan3-nat6"
 add_group_and_user
 default_postinst
+[ -n "${IPKG_INSTROOT}" ] || {
+	/etc/init.d/mwan3-nat6 enable >/dev/null 2>&1 || :
+	/etc/init.d/mwan3-nat6 restart >/dev/null 2>&1 || :
+}
+exit 0
 EOF
 cat >"$SCRIPT_ROOT/core-pre-deinstall" <<'EOF'
 #!/bin/sh
+[ -n "${IPKG_INSTROOT}" ] || /usr/nft-nat6.sh cleanup-policy >/dev/null 2>&1 || :
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 export root="${IPKG_INSTROOT}"
@@ -149,12 +166,12 @@ EOF
 SOURCE_DATE_EPOCH=0 "$APK" mkpkg \
 	--info 'name:mwan3-nat6' \
 	--info "version:$VERSION-r1" \
-	--info 'description:Configurable IPv6 prefix NAT helper for two or more mwan3 WANs. Installation is inert until WANs are configured and rules are applied manually.' \
+	--info 'description:Configurable IPv6 prefix NAT helper for two or more mwan3 WANs with an optional independent renewal monitor disabled by default.' \
 	--info 'arch:noarch' \
 	--info 'license:GPL-3.0-only' \
 	--info 'origin:mwan3-nat6' \
 	--info 'provides:mwan3-nat6-any' \
-	--info 'depends:jsonfilter kmod-nft-nat libc netifd nftables uci' \
+	--info 'depends:ip-full jsonfilter kmod-nft-nat libc mwan3 netifd nftables uci' \
 	--script "post-install:$SCRIPT_ROOT/core-post-install" \
 	--script "post-upgrade:$SCRIPT_ROOT/core-post-upgrade" \
 	--script "pre-deinstall:$SCRIPT_ROOT/core-pre-deinstall" \
@@ -178,4 +195,5 @@ SOURCE_DATE_EPOCH=0 "$APK" mkpkg \
 	--sign-key "$SIGN_KEY" \
 	--output "$LUCI_APK"
 
+"$PROJECT_ROOT/scripts/verify-apk-artifacts.sh" "$SDK_DIR" "$OUTPUT_DIR"
 sha256sum "$CORE_APK" "$LUCI_APK"

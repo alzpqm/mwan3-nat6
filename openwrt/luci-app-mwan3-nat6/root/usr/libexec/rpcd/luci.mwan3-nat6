@@ -7,7 +7,7 @@ PATH="${NAT6_PATH:-/usr/sbin:/usr/bin:/sbin:/bin}"
 NAT6_SCRIPT="${NAT6_SCRIPT:-/usr/nft-nat6.sh}"
 
 emit_missing() {
-	printf '%s\n' '{"ok":false,"ready":false,"error":"nft-nat6-script-missing","interfaces":[],"nat":{"present":false,"wan_count":0,"rule_count":0,"expected_rule_count":0,"profile":"unknown"}}'
+	printf '%s\n' '{"ok":false,"ready":false,"all_ready":false,"degraded":false,"policy_ready":false,"error":"nft-nat6-script-missing","interfaces":[],"nat":{"present":false,"wan_count":0,"active_wan_count":0,"inactive_wan_count":0,"rule_count":0,"expected_rule_count":0,"profile":"unknown"},"local_icmp":{"enabled":false,"present":false,"rule_count":0,"expected_rule_count":0,"mark":"","routing_rule_count":0,"expected_routing_rule_count":0,"routing_priority":1500,"profile":"disabled"},"monitor":{"enabled":false,"interval":0,"debounce":0,"refresh_mwan3":false}}'
 }
 
 emit_status() {
@@ -20,7 +20,7 @@ emit_status() {
 	if [ "$rc" -eq 0 ] && [ -n "$result" ]; then
 		printf '%s\n' "$result"
 	else
-		printf '%s\n' '{"ok":false,"ready":false,"error":"status-failed-check-logread","interfaces":[],"nat":{"present":false,"wan_count":0,"rule_count":0,"expected_rule_count":0,"profile":"unknown"}}'
+		printf '%s\n' '{"ok":false,"ready":false,"all_ready":false,"degraded":false,"policy_ready":false,"error":"status-failed-check-logread","interfaces":[],"nat":{"present":false,"wan_count":0,"active_wan_count":0,"inactive_wan_count":0,"rule_count":0,"expected_rule_count":0,"profile":"unknown"},"local_icmp":{"enabled":false,"present":false,"rule_count":0,"expected_rule_count":0,"mark":"","routing_rule_count":0,"expected_routing_rule_count":0,"routing_priority":1500,"profile":"disabled"},"monitor":{"enabled":false,"interval":0,"debounce":0,"refresh_mwan3":false}}'
 	fi
 }
 

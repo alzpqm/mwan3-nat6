@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-mwan3-nat6
-PKG_VERSION:=0.0.1
+PKG_VERSION:=0.0.28
 PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0-only
 
@@ -17,9 +17,8 @@ define Package/luci-app-mwan3-nat6
 endef
 
 define Package/luci-app-mwan3-nat6/description
-  Configure WAN membership, view status, and manually apply the mwan3-nat6
-  helper. The page does not configure mwan3, install firewall includes, or
-  enable automatic hooks.
+  Configure WAN membership, renewal monitoring, tracker status, and guarded
+  manual apply. The page does not change mwan3 policies or use firewall hooks.
 endef
 
 define Build/Compile

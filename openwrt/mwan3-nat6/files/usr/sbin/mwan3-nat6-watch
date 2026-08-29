@@ -1,0 +1,195 @@
+#!/bin/sh
+
+# Independent, debounced renewal loop. It never reloads fw4, reconnects a WAN,
+# or changes mwan3 policy. A newly named, default-off compatibility option may
+# ask mwan3 to rebuild only an interface whose address or prefix changed.
+
+PATH="${NAT6_PATH:-/usr/sbin:/usr/bin:/sbin:/bin}"
+CONFIG="${NAT6_CONFIG:-mwan3-nat6}"
+NAT6_SCRIPT="${NAT6_SCRIPT:-/usr/nft-nat6.sh}"
+RUNTIME_DIR="${NAT6_RUNTIME_DIR:-/var/run}"
+APPLIED_FILE="$RUNTIME_DIR/mwan3-nat6.applied"
+CANDIDATE_FILE="$RUNTIME_DIR/mwan3-nat6.candidate.$$"
+CURRENT_FILE="$RUNTIME_DIR/mwan3-nat6.current.$$"
+MAX_CYCLES="${NAT6_WATCH_MAX_CYCLES:-0}"
+STABLE_COUNT=0
+CYCLES=0
+
+cleanup() {
+	rm -f "$CANDIDATE_FILE" "$CURRENT_FILE" 2>/dev/null || :
+}
+
+log_message() {
+	priority="$1"
+	shift
+	logger -t mwan3-nat6-watch -p "daemon.$priority" -- "$*" 2>/dev/null || :
+}
+
+is_uint() {
+	case "$1" in
+	'' | *[!0-9]*) return 1 ;;
+	*) return 0 ;;
+	esac
+}
+
+uci_get() {
+	uci -q get "$CONFIG.globals.$1" 2>/dev/null
+}
+
+is_enabled() {
+	case "$1" in
+	1 | true | yes | on) return 0 ;;
+	*) return 1 ;;
+	esac
+}
+
+changed_logicals() {
+	previous="$1"
+	current="$2"
+	if [ ! -s "$previous" ]; then
+		awk -F '|' '$1 == "wan" { print $2 }' "$current"
+		return
+	fi
+	awk -F '|' '
+		NR == FNR { if ($1 == "wan") old[$2] = $0; next }
+		$1 == "wan" && old[$2] != $0 { print $2 }
+	' "$previous" "$current"
+}
+
+refresh_mwan3_trackers() {
+	previous="$1"
+	current="$2"
+	refresh="$(uci_get refresh_mwan3_after_nat)"
+	is_enabled "${refresh:-0}" || return 0
+	command -v mwan3 >/dev/null 2>&1 || {
+		log_message warning 'mwan3 refresh requested but mwan3 is not installed'
+		return 0
+	}
+
+	changed_logicals "$previous" "$current" |
+	while IFS= read -r logical; do
+		[ -n "$logical" ] || continue
+		[ "$(uci -q get "mwan3.$logical" 2>/dev/null)" = interface ] || {
+			log_message warning "$logical changed but has no matching mwan3 interface section"
+			continue
+		}
+		output="$(mwan3 ifup "$logical" 2>&1)"
+		rc="$?"
+		if [ "$rc" -eq 0 ]; then
+			log_message info "refreshed mwan3 interface $logical after NAT renewal"
+			[ -z "$output" ] || log_message warning "$logical refresh output: $output"
+		else
+			log_message err "mwan3 ifup $logical failed with code $rc: $output"
+		fi
+	done
+}
+
+sleep_interval() {
+	CYCLES=$((CYCLES + 1))
+	if is_uint "$MAX_CYCLES" && [ "$MAX_CYCLES" -gt 0 ] &&
+		[ "$CYCLES" -ge "$MAX_CYCLES" ]; then
+		exit 0
+	fi
+	sleep "$INTERVAL"
+}
+
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
+[ -x "$NAT6_SCRIPT" ] || {
+	log_message err "missing executable $NAT6_SCRIPT"
+	exit 1
+}
+is_enabled "$(uci_get monitor)" || exit 0
+
+INTERVAL="$(uci_get interval)"
+INTERVAL="${INTERVAL:-15}"
+DEBOUNCE="$(uci_get debounce)"
+DEBOUNCE="${DEBOUNCE:-2}"
+is_uint "$INTERVAL" && [ "$INTERVAL" -ge 5 ] && [ "$INTERVAL" -le 3600 ] || {
+	log_message err 'monitor interval must be between 5 and 3600 seconds'
+	exit 1
+}
+is_uint "$DEBOUNCE" && [ "$DEBOUNCE" -ge 1 ] && [ "$DEBOUNCE" -le 10 ] || {
+	log_message err 'monitor debounce must be between 1 and 10 samples'
+	exit 1
+}
+
+while :; do
+	if ! "$NAT6_SCRIPT" fingerprint >"$CURRENT_FILE" 2>/dev/null; then
+		STABLE_COUNT=0
+		: >"$CANDIDATE_FILE"
+		sleep_interval
+		continue
+	fi
+
+	status="$($NAT6_SCRIPT status 2>/dev/null)"
+	ready="$(printf '%s\n' "$status" | jsonfilter -e '@.ready' 2>/dev/null)"
+	profile="$(printf '%s\n' "$status" | jsonfilter -e '@.nat.profile' 2>/dev/null)"
+	local_profile="$(printf '%s\n' "$status" | jsonfilter -e '@.local_icmp.profile' 2>/dev/null)"
+	if [ "$ready" != true ]; then
+		STABLE_COUNT=0
+		: >"$CANDIDATE_FILE"
+		sleep_interval
+		continue
+	fi
+
+	if [ "$profile" = managed ] &&
+		{ [ "$local_profile" = managed ] || [ "$local_profile" = disabled ]; }; then
+		cp "$CURRENT_FILE" "$APPLIED_FILE"
+		STABLE_COUNT=0
+		: >"$CANDIDATE_FILE"
+		sleep_interval
+		continue
+	fi
+	case "$profile" in
+	inactive | managed-stale | unsafe) ;;
+	managed) ;;
+	*)
+		if [ ! -s "$CANDIDATE_FILE" ] || ! cmp -s "$CANDIDATE_FILE" "$CURRENT_FILE"; then
+			log_message err "refusing automatic replacement of profile: ${profile:-unknown}"
+			cp "$CURRENT_FILE" "$CANDIDATE_FILE"
+		fi
+		STABLE_COUNT=0
+		sleep_interval
+		continue
+		;;
+	esac
+	case "$local_profile" in
+	disabled | managed | managed-stale | missing) ;;
+	*)
+		if [ ! -s "$CANDIDATE_FILE" ] || ! cmp -s "$CANDIDATE_FILE" "$CURRENT_FILE"; then
+			log_message err "refusing automatic replacement of local ICMP profile: ${local_profile:-unknown}"
+			cp "$CURRENT_FILE" "$CANDIDATE_FILE"
+		fi
+		STABLE_COUNT=0
+		sleep_interval
+		continue
+		;;
+	esac
+
+	if [ -s "$CANDIDATE_FILE" ] && cmp -s "$CANDIDATE_FILE" "$CURRENT_FILE"; then
+		STABLE_COUNT=$((STABLE_COUNT + 1))
+	else
+		cp "$CURRENT_FILE" "$CANDIDATE_FILE"
+		STABLE_COUNT=1
+	fi
+	if [ "$STABLE_COUNT" -lt "$DEBOUNCE" ]; then
+		sleep_interval
+		continue
+	fi
+
+	previous_file="$APPLIED_FILE"
+	if "$NAT6_SCRIPT" apply; then
+		refresh_mwan3_trackers "$previous_file" "$CURRENT_FILE"
+		cp "$CURRENT_FILE" "$APPLIED_FILE"
+		log_message info "renewed NAT6 after $STABLE_COUNT stable samples"
+	else
+		log_message err 'automatic NAT6 renewal failed; live rules were not accepted as current'
+	fi
+	STABLE_COUNT=0
+	: >"$CANDIDATE_FILE"
+	sleep_interval
+done
