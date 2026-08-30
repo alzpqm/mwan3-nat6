@@ -189,6 +189,26 @@ while [ "$#" -gt 0 ]; do
 done
 logical=''
 IFS= read -r logical || [ -n "$logical" ] || exit 1
+case "$logical" in
+'{'*)
+	case "$expression" in
+	'@.nat.profile')
+		printf '%s\n' "$logical" | sed -n 's/.*"nat":{[^}]*"profile":"\([^"]*\)"}.*/\1/p'
+		;;
+	'@.nat.rule_count')
+		printf '%s\n' "$logical" | sed -n 's/.*"nat":{[^}]*"rule_count":\([0-9][0-9]*\),.*/\1/p'
+		;;
+	'@.local_icmp.profile')
+		printf '%s\n' "$logical" | sed -n 's/.*"local_icmp":{[^}]*"profile":"\([^"]*\)"}.*/\1/p'
+		;;
+	'@.local_icmp.rule_count')
+		printf '%s\n' "$logical" | sed -n 's/.*"local_icmp":{[^}]*"rule_count":\([0-9][0-9]*\),.*/\1/p'
+		;;
+	*) exit 1 ;;
+	esac
+	exit
+	;;
+esac
 index="${logical#wan}"
 index="${index%_6}"
 case "$index" in '' | *[!0-9]*) exit 1 ;; esac
@@ -284,6 +304,10 @@ if [ "$1" = '-c' ] && [ "$2" = '-f' ]; then
 fi
 if [ "$1" = '-f' ]; then
 	cp "$2" "$MOCK_STATE/apply.batch"
+	if [ "${MOCK_APPLY_TERM:-0}" = '1' ]; then
+		kill -TERM "$PPID"
+		exit 1
+	fi
 	[ "${MOCK_APPLY_FAIL:-0}" != '1' ] || exit 1
 	cp "$2" "$MOCK_STATE/live.rules"
 	exit 0
@@ -462,6 +486,33 @@ run_status MOCK_WAN_COUNT=2 MOCK_PIN_LOCAL_ICMP=1
 assert_rc 0
 assert_contains '"routing_rule_count":0,"expected_routing_rule_count":2,"routing_priority":1500,"profile":"missing"' "$CASE_DIR/stdout"
 
+new_case local_icmp_expand_managed_subset
+run_apply MOCK_WAN_COUNT=3 MOCK_PIN_LOCAL_ICMP=1 MOCK_DOWN=wan3_6
+assert_rc 0
+assert_rule_shape 2
+assert_local_pin_shape 2
+run_status MOCK_WAN_COUNT=3 MOCK_PIN_LOCAL_ICMP=1
+assert_rc 0
+assert_contains '"profile":"managed-stale"' "$CASE_DIR/stdout"
+assert_contains '"routing_rule_count":2,"expected_routing_rule_count":3,"routing_priority":1500,"profile":"managed-stale"' "$CASE_DIR/stdout"
+run_apply MOCK_WAN_COUNT=3 MOCK_PIN_LOCAL_ICMP=1
+assert_rc 0
+assert_rule_shape 3
+assert_local_pin_shape 3
+run_status MOCK_WAN_COUNT=3 MOCK_PIN_LOCAL_ICMP=1
+assert_contains '"routing_rule_count":3,"expected_routing_rule_count":3,"routing_priority":1500,"profile":"managed"' "$CASE_DIR/stdout"
+
+new_case local_icmp_shrink_managed_subset
+run_apply MOCK_WAN_COUNT=3 MOCK_PIN_LOCAL_ICMP=1
+assert_rc 0
+run_status MOCK_WAN_COUNT=3 MOCK_PIN_LOCAL_ICMP=1 MOCK_DOWN=wan3_6
+assert_rc 0
+assert_contains '"routing_rule_count":3,"expected_routing_rule_count":2,"routing_priority":1500,"profile":"managed-stale"' "$CASE_DIR/stdout"
+run_apply MOCK_WAN_COUNT=3 MOCK_PIN_LOCAL_ICMP=1 MOCK_DOWN=wan3_6
+assert_rc 0
+assert_rule_shape 2
+assert_local_pin_shape 2
+
 new_case local_icmp_policy_wrong_table
 run_apply MOCK_WAN_COUNT=2 MOCK_PIN_LOCAL_ICMP=1
 assert_rc 0
@@ -471,6 +522,15 @@ mv "$CASE_DIR/state/policy.rules.wrong" "$CASE_DIR/state/policy.rules"
 run_status MOCK_WAN_COUNT=2 MOCK_PIN_LOCAL_ICMP=1
 assert_rc 0
 assert_contains '"routing_rule_count":2,"expected_routing_rule_count":2,"routing_priority":1500,"profile":"unexpected"' "$CASE_DIR/stdout"
+cp "$CASE_DIR/state/policy.rules" "$CASE_DIR/state/policy.before-refusal"
+cp "$CASE_DIR/state/live.rules" "$CASE_DIR/state/live.before-refusal"
+run_apply MOCK_WAN_COUNT=2 MOCK_PIN_LOCAL_ICMP=1
+assert_rc 1
+assert_contains 'refusing to replace an unexpected existing local ICMP chain' "$CASE_DIR/stderr"
+cmp -s "$CASE_DIR/state/policy.before-refusal" "$CASE_DIR/state/policy.rules" ||
+	fail 'manual refusal changed wrong-table RPDB state'
+cmp -s "$CASE_DIR/state/live.before-refusal" "$CASE_DIR/state/live.rules" ||
+	fail 'manual refusal changed live nft state'
 
 new_case local_icmp_policy_ambiguous
 run_apply MOCK_WAN_COUNT=2 MOCK_PIN_LOCAL_ICMP=1 MOCK_AMBIGUOUS_POLICY=1
@@ -634,6 +694,12 @@ mv "$CASE_DIR/state/unexpected.rules" "$CASE_DIR/state/live.rules"
 run_status MOCK_WAN_COUNT=2
 assert_rc 0
 assert_contains '"profile":"unexpected"' "$CASE_DIR/stdout"
+cp "$CASE_DIR/state/live.rules" "$CASE_DIR/state/live.before-refusal"
+run_apply MOCK_WAN_COUNT=2
+assert_rc 1
+assert_contains 'refusing to replace an unexpected existing NAT6 chain' "$CASE_DIR/stderr"
+cmp -s "$CASE_DIR/state/live.before-refusal" "$CASE_DIR/state/live.rules" ||
+	fail 'manual refusal changed unexpected nft state'
 
 new_case extra_rule_profile
 run_apply MOCK_WAN_COUNT=2
@@ -836,6 +902,18 @@ assert_contains 'could not replace nft rules' "$CASE_DIR/stderr"
 cmp -s "$CASE_DIR/state/policy.before" "$CASE_DIR/state/policy.rules" ||
 	fail 'nft apply failure did not restore the previous RPDB rules'
 
+new_case interrupted_apply_restores_policy
+run_apply MOCK_WAN_COUNT=2 MOCK_PIN_LOCAL_ICMP=1
+assert_rc 0
+cp "$CASE_DIR/state/policy.rules" "$CASE_DIR/state/policy.before"
+cp "$CASE_DIR/state/live.rules" "$CASE_DIR/state/live.before"
+run_apply MOCK_WAN_COUNT=3 MOCK_PIN_LOCAL_ICMP=1 MOCK_APPLY_TERM=1
+assert_rc 143
+cmp -s "$CASE_DIR/state/policy.before" "$CASE_DIR/state/policy.rules" ||
+	fail 'handled apply interruption did not restore the previous RPDB rules'
+cmp -s "$CASE_DIR/state/live.before" "$CASE_DIR/state/live.rules" ||
+	fail 'handled apply interruption changed live nft rules'
+
 new_case logger_failure
 run_apply MOCK_WAN_COUNT=2 MOCK_LOGGER_FAIL=1
 assert_rc 0
@@ -876,4 +954,4 @@ assert_rc 1
 assert_contains 'uci is not installed' "$CASE_DIR/stderr"
 assert_no_nft_calls
 
-printf '%s\n' 'test-nft-nat6: PASS (57 cases)'
+printf '%s\n' 'test-nft-nat6: PASS (60 cases)'

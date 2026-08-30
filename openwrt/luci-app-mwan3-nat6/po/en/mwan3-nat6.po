@@ -1,0 +1,489 @@
+# English language pack for the Traditional Chinese mwan3-nat6 interface.
+# Generated from the fixed 0.0.36 Traditional Chinese source strings.
+msgid ""
+msgstr ""
+"Project-Id-Version: mwan3-nat6 0.0.36\n"
+"PO-Revision-Date: 2026-08-30 00:00+0000\n"
+"Last-Translator: mwan3-nat6 <mwan3-nat6@users.noreply.github.com>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: status.js
+msgid "%d / %d 條已設定的 WAN 已就緒。NAT6 會繼續服務目前就緒的 WAN；無法使用的 WAN 將暫時排除，待恢復後再自動加入。"
+msgstr "%d of %d configured WANs are ready. NAT6 remains active for the ready subset; unavailable WANs are excluded until they recover."
+
+#: status.js
+msgid "%d / %d 條預期規則"
+msgstr "%d of %d expected rules"
+
+#: status.js
+msgid "%d 條 WAN 已就緒，對應的 mwan3 追蹤成員均已上線，精確的 NAT6 管理規則也已生效。"
+msgstr "%d WANs are ready, their tracked mwan3 members are online, and the exact managed NAT6 rules are active."
+
+#: settings.js
+msgid "IPv6 邏輯介面"
+msgstr "IPv6 logical interface"
+
+#: settings.js
+msgid "Linux 網路裝置名稱不得超過 15 個字元。"
+msgstr "Linux network device names may use at most 15 characters."
+
+#: status.js
+msgid "N 條就緒的 WAN 會產生 N² 條 NAT 規則。前綴 NAT 無法合併單一 TCP 或 QUIC 連線；mwan3 會分配不同連線，而本頁面絕不變更 mwan3 權重。"
+msgstr "N ready WANs generate N² NAT rules. Prefix NAT does not combine one TCP or QUIC flow; mwan3 distributes separate connections, and this page never changes mwan3 weights."
+
+#: status.js
+msgid "N-WAN NAT6 規則已成功套用。"
+msgstr "N-WAN NAT6 rules were applied successfully."
+
+#: status.js
+msgid "NAT6 需要處理。套用前請檢查 WAN 設定、安全檢查與目前的規則狀態。"
+msgstr "NAT6 needs attention. Review the configuration, WAN safety checks, and the active rule profile before applying."
+
+#: status.js
+msgid "WAN"
+msgstr "WAN"
+
+#: status.js
+msgid "WAN IPv6 位址無效"
+msgstr "Invalid WAN IPv6 address"
+
+#: settings.js
+msgid "WAN 位址索引"
+msgstr "WAN address index"
+
+#: status.js
+msgid "WAN 與流量計數"
+msgstr "WAN and traffic counters"
+
+#: menu
+msgid "WAN 設定"
+msgstr "WAN Configuration"
+
+#: settings.js
+msgid "WAN 連線"
+msgstr "WANs"
+
+#: settings.js
+msgid "WAN 顯示名稱"
+msgstr "WAN label"
+
+#: status.js
+msgid "mwan3 多 WAN NAT6"
+msgstr "mwan3 N-WAN NAT6"
+
+#: status.js
+msgid "mwan3 標記遮罩無效或為零。"
+msgstr "The mwan3 mark mask is invalid or zero."
+
+#: status.js
+msgid "mwan3 追蹤"
+msgstr "mwan3 tracker"
+
+#: status.js
+msgid "mwan3 追蹤器更新設定無效。"
+msgstr "The optional mwan3 refresh setting is invalid."
+
+#: status.js
+msgid "netifd 狀態"
+msgstr "netifd state"
+
+#: settings.js
+msgid "nftables 資料表"
+msgstr "nftables table"
+
+#: status.js
+msgid "nftables 資料表名稱無效。"
+msgstr "The nftables table name is invalid."
+
+#: status.js
+msgid "上線"
+msgstr "Online"
+
+#: status.js
+msgid "中斷連線中"
+msgstr "Disconnecting"
+
+#: status.js
+msgid "位址或前綴索引必須介於 0 到 15。"
+msgstr "An address or prefix index is outside 0-15."
+
+#: settings.js
+msgid "供 NextTrace 等工具使用的選用相容功能。當程式明確綁定至已就緒的 PPP 裝置時，會先查詢該裝置通過驗證的 mwan3 路由表；使用精確來源位址的 ICMPv6 Echo Request 也會套用略過標記。轉送的 LAN 流量、未綁定裝置的連線及 mwan3 權重都不受影響。"
+msgstr "Optional workaround for tools such as NextTrace. A socket explicitly bound to a ready PPP device receives an initial lookup in that device’s verified mwan3 table; exact-source ICMPv6 echo requests also receive the bypass mark. Forwarded LAN traffic, unbound connections, and mwan3 weights are unchanged."
+
+#: status.js
+msgid "偵測到的規則狀態："
+msgstr "Detected profile: "
+
+#: settings.js
+msgid "全域設定"
+msgstr "Global settings"
+
+#: status.js
+msgid "分數"
+msgstr "score"
+
+#: status.js
+msgid "分流方式"
+msgstr "Aggregation model"
+
+#: status.js
+msgid "分流能力"
+msgstr "Aggregate behavior"
+
+#: status.js
+msgid "前綴長度不符"
+msgstr "Unexpected prefix length"
+
+#: status.js
+msgid "前綴長度無效"
+msgstr "Invalid prefix length"
+
+#: settings.js
+msgid "只能使用英文字母、數字、空格及 . _ : @ + / -。"
+msgstr "Use simple ASCII letters, numbers, spaces, dot, underscore, colon, at, plus, slash, and hyphen."
+
+#: settings.js
+msgid "只能使用英文字母、數字及 . _ : @ + -。"
+msgstr "Use only letters, numbers, dot, underscore, colon, at, plus, and hyphen."
+
+#: status.js
+msgid "可用 WAN"
+msgstr "Eligible WANs"
+
+#: settings.js
+msgid "可設定 2 至 32 條 IPv6 WAN。自動更新監看程式獨立於 fw4 運作，必須由您手動啟用。"
+msgstr "Configure two to thirty-two IPv6 WANs. The optional renewal monitor is independent from fw4 and is disabled until you explicitly enable it."
+
+#: status.js
+msgid "同一個 WAN 裝置對應到多個 mwan3 IPv6 路由表。"
+msgstr "A WAN device maps to more than one mwan3 IPv6 policy table."
+
+#: status.js
+msgid "同一個目前使用的裝置被多條 WAN 重複使用。"
+msgstr "A live device is used by more than one WAN."
+
+#: status.js
+msgid "同一個邏輯介面被設定了多次。"
+msgstr "A logical interface is configured more than once."
+
+#: settings.js
+msgid "名稱須以英文字母或底線開頭，且只能包含英文字母、數字與底線。"
+msgstr "Start with a letter or underscore and use only letters, numbers, and underscores."
+
+#: settings.js
+msgid "啟用"
+msgstr "Enabled"
+
+#: settings.js
+msgid "啟用後，獨立的 procd 服務會等待 WAN 資料穩定，再修復未啟用、已過期或已知不安全的 NAT6 規則；絕不重新載入 fw4。"
+msgstr "When enabled, a standalone procd service waits for stable WAN data and repairs inactive, stale, or known unsafe NAT6 rules. It never reloads fw4."
+
+#: status.js
+msgid "啟用的 WAN 數量超過上限。"
+msgstr "Too many WANs are enabled."
+
+#: status.js
+msgid "多條獨立連線最多可使用兩條線路"
+msgstr "Up to two links across independent connections"
+
+#: status.js
+msgid "多條獨立連線最多可使用所有已就緒線路"
+msgstr "Up to the ready links across independent connections"
+
+#: status.js
+msgid "套用 N-WAN 規則"
+msgstr "Apply N-WAN rules"
+
+#: status.js
+msgid "套用失敗，請執行 logread -e nft-nat6 查看記錄。"
+msgstr "Apply failed. Check logread -e nft-nat6."
+
+#: status.js
+msgid "委派前綴"
+msgstr "Delegated prefix"
+
+#: status.js
+msgid "委派前綴無效"
+msgstr "Invalid delegated prefix"
+
+#: settings.js
+msgid "委派前綴索引"
+msgstr "Delegated-prefix index"
+
+#: status.js
+msgid "尚未設定任何 WAN。"
+msgstr "No WAN sections are configured."
+
+#: status.js
+msgid "就緒"
+msgstr "Ready"
+
+#: status.js
+msgid "就緒 WAN 的 NAT6 規則已是最新狀態，但其中一個受追蹤的 mwan3 成員目前離線。"
+msgstr "NAT6 is current for the ready subset, but one of its tracked mwan3 members is offline."
+
+#: status.js
+msgid "已停用"
+msgstr "disabled"
+
+#: status.js
+msgid "已啟用"
+msgstr "enabled"
+
+#: status.js
+msgid "已啟用：每 %d 秒檢查一次，連續 %d 個樣本穩定後動作；mwan3 追蹤器更新為%s。"
+msgstr "Enabled: every %d seconds, after %d stable samples; changed mwan3 tracker refresh is %s."
+
+#: status.js
+msgid "已啟用：精確 ICMPv6 規則 %d / %d 條、初始路由規則 %d / %d 條；略過標記為 %s，RPDB 優先序為 %d，狀態為 %s。"
+msgstr "Enabled: %d of %d exact ICMPv6 rules and %d of %d initial-route rules are active with bypass mark %s at RPDB priority %d; profile is %s."
+
+#: status.js
+msgid "已安裝的 NAT6 規則"
+msgstr "Installed NAT6 rules"
+
+#: status.js
+msgid "找不到數字格式的 mwan3 IPv6 路由表。"
+msgstr "No numeric mwan3 IPv6 policy table was found."
+
+#: status.js
+msgid "接收 / 傳送"
+msgstr "RX / TX"
+
+#: settings.js
+msgid "支援路由器本機的指定 WAN 診斷"
+msgstr "Honor router-local device binding"
+
+#: settings.js
+msgid "更新已變更的 mwan3 追蹤器"
+msgstr "Refresh changed mwan3 trackers"
+
+#: status.js
+msgid "未啟用。在「WAN 設定」中啟用監看前，只能手動套用規則。"
+msgstr "Disabled. Live rules change only through manual Apply until monitoring is enabled in Settings."
+
+#: status.js
+msgid "未啟用。路由器本機的指定裝置診斷仍依照現有 mwan3/OpenClash 策略。"
+msgstr "Disabled. Router-local device-bound diagnostics remain subject to the existing mwan3/OpenClash policy."
+
+#: status.js
+msgid "未知"
+msgstr "Unknown"
+
+#: status.js
+msgid "未知的狀態錯誤。"
+msgstr "Unknown status error."
+
+#: status.js
+msgid "未追蹤"
+msgstr "Not tracked"
+
+#: status.js
+msgid "未連線"
+msgstr "Down"
+
+#: status.js
+msgid "本套件規則已過期或含無法使用的 WAN"
+msgstr "Managed rules with stale or unavailable WAN data"
+
+#: status.js
+msgid "某個 WAN 的啟用狀態無效。"
+msgstr "A WAN has an invalid enabled value."
+
+#: status.js
+msgid "某個 WAN 的裝置名稱無效。"
+msgstr "A WAN has an invalid device."
+
+#: status.js
+msgid "某個 WAN 的邏輯介面名稱無效。"
+msgstr "A WAN has an invalid logical interface."
+
+#: status.js
+msgid "某個 WAN 的顯示名稱無效。"
+msgstr "A WAN has an invalid label."
+
+#: status.js
+msgid "模式"
+msgstr "Profile"
+
+#: settings.js
+msgid "檢查間隔"
+msgstr "Polling interval"
+
+#: settings.js
+msgid "每個已啟用項目都必須能由 ifstatus 取得 WAN 的全域 IPv6 位址與委派前綴。邏輯介面及目前使用的裝置不得重複。"
+msgstr "Every enabled entry must expose a global WAN IPv6 address and delegated prefix through ifstatus. Logical interfaces and live devices must be unique."
+
+#: settings.js
+msgid "每次唯讀檢查 netifd 與 nftables 之間的間隔秒數。"
+msgstr "Seconds between read-only netifd and nftables checks."
+
+#: status.js
+msgid "沒有 NAT6 鏈"
+msgstr "No NAT6 chain"
+
+#: status.js
+msgid "涵蓋範圍過大的不安全前綴規則"
+msgstr "Unsafe broad prefix rules"
+
+#: status.js
+msgid "無法使用"
+msgstr "Unavailable"
+
+#: status.js
+msgid "無法辨識的規則組"
+msgstr "Unexpected rule set"
+
+#: menu
+msgid "狀態"
+msgstr "Status"
+
+#: status.js
+msgid "產生的 NAT 規則"
+msgstr "Generated NAT rules"
+
+#: status.js
+msgid "監看間隔必須介於 5 到 3600 秒。"
+msgstr "The monitor interval is outside 5-3600 seconds."
+
+#: status.js
+msgid "目前就緒的 WAN"
+msgstr "Current ready subset"
+
+#: status.js
+msgid "目前由本套件管理的 N-WAN 規則"
+msgstr "Current managed N-WAN rules"
+
+#: status.js
+msgid "目前的裝置名稱無效"
+msgstr "Invalid live device"
+
+#: settings.js
+msgid "穩定樣本數"
+msgstr "Stable samples"
+
+#: status.js
+msgid "穩定樣本數必須介於 1 到 10。"
+msgstr "The monitor debounce is outside 1-10 samples."
+
+#: settings.js
+msgid "自動更新監看"
+msgstr "Automatic renewal monitor"
+
+#: status.js
+msgid "自動更新監看狀態"
+msgstr "Renewal monitor"
+
+#: status.js
+msgid "自動監看設定無效。"
+msgstr "The automatic monitor setting is invalid."
+
+#: status.js
+msgid "至少要啟用兩條 WAN。"
+msgstr "At least two WANs must be enabled."
+
+#: status.js
+msgid "至少要有一條 WAN 就緒，而且現有規則鏈必須能安全辨識，才可套用。"
+msgstr "At least one WAN must be ready and existing chains must be safely recognized before Apply."
+
+#: status.js
+msgid "計數值會持續累加。比較策略時，請在相同的多連線負載前後記錄差值。"
+msgstr "Counters are cumulative. Record deltas around the same multi-connection workload when comparing policies."
+
+#: status.js
+msgid "設定 WAN"
+msgstr "Configure WANs"
+
+#: settings.js
+msgid "請使用專屬的資料表名稱。既有安裝可保留先前通過驗證的名稱，以維持相容性。"
+msgstr "Use a dedicated table name. Existing installations may retain a previous validated table name for compatibility."
+
+#: status.js
+msgid "資料表："
+msgstr "Table: "
+
+#: status.js
+msgid "路由器本機的裝置綁定"
+msgstr "Router-local device binding"
+
+#: status.js
+msgid "路由器本機的裝置綁定設定無效。"
+msgstr "The router-local ICMPv6 pin setting is invalid."
+
+#: status.js
+msgid "路由器無法建立暫存狀態檔。"
+msgstr "The router could not create a temporary state file."
+
+#: status.js
+msgid "路由器缺少必要指令。"
+msgstr "A required router command is missing."
+
+#: status.js
+msgid "送出裝置不符"
+msgstr "Unexpected device"
+
+#: status.js
+msgid "連線中"
+msgstr "Connecting"
+
+#: settings.js
+msgid "連續取得指定數量且內容相同的就緒狀態後，才會更新規則。"
+msgstr "Require this many identical ready snapshots before replacing rules."
+
+#: settings.js
+msgid "進階相容選項，預設停用。NAT 規則成功更新後，只對位址或前綴有變動的 IPv6 介面執行 mwan3 ifup。除非已確認必須更新追蹤器，否則請維持停用。"
+msgstr "Advanced compatibility option, disabled by default. After a successful NAT renewal, run mwan3 ifup only for configured IPv6 interfaces whose address or prefix changed. Leave disabled unless tracker refresh is demonstrably required."
+
+#: settings.js
+msgid "選用的安全檢查；留空時接受 netifd 目前回報的 l3_device。"
+msgstr "Optional safety check. Leave empty to accept the current netifd l3_device."
+
+#: settings.js
+msgid "選用的安全檢查；留空時接受目前委派前綴的長度。"
+msgstr "Optional safety check. Leave empty to accept the current delegated-prefix length."
+
+#: settings.js
+msgid "選用的顯示名稱，請使用簡單的 ASCII 字元。"
+msgstr "Optional display label using simple ASCII characters."
+
+#: status.js
+msgid "重新整理"
+msgstr "Refresh"
+
+#: status.js
+msgid "錯誤 / 丟棄"
+msgstr "Errors / drops"
+
+#: status.js
+msgid "開啟 WAN 設定"
+msgstr "Open WAN configuration"
+
+#: status.js
+msgid "雙 WAN 範例"
+msgstr "Two-WAN example"
+
+#: status.js
+msgid "離線"
+msgstr "Offline"
+
+#: status.js
+msgid "預期前綴長度必須介於 3 到 64。"
+msgstr "An expected prefix length is outside 3-64."
+
+#: settings.js
+msgid "預期的 PD 長度"
+msgstr "Expected PD length"
+
+#: settings.js
+msgid "預期送出裝置"
+msgstr "Expected egress device"
+
+#: settings.js
+msgid "顯示名稱"
+msgstr "Label"

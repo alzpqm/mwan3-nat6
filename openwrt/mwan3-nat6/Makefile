@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mwan3-nat6
-PKG_VERSION:=0.0.28
+PKG_VERSION:=0.0.36
 PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0-only
 
@@ -10,16 +10,15 @@ include $(INCLUDE_DIR)/package.mk
 define Package/mwan3-nat6
   SECTION:=net
   CATEGORY:=Network
-  TITLE:=mwan3 IPv6 prefix NAT helper
+  TITLE:=mwan3 IPv6 前綴 NAT 工具
   PKGARCH:=all
   DEPENDS:=+ip-full +jsonfilter +netifd +nftables +kmod-nft-nat +uci +mwan3
 endef
 
 define Package/mwan3-nat6/description
-  IPv6 prefix NAT helper for multi-WAN mwan3 connection aggregation.
-  The package does not install firewall includes or hotplug hooks. Its optional
-  independent monitor and router-local device-bound compatibility rules are
-  disabled by default.
+  供多 WAN mwan3 連線分流使用的 IPv6 前綴 NAT 工具。
+  本套件不會安裝防火牆 include 或 hotplug hook；獨立監看服務與路由器
+  本機的裝置綁定相容規則均為選用功能，預設不啟用。
 endef
 
 define Build/Compile

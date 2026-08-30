@@ -10,7 +10,7 @@
     }
   },
   "admin/network/mwan3-nat6/status": {
-    "title": "Status",
+    "title": "狀態",
     "order": 10,
     "action": {
       "type": "view",
@@ -21,7 +21,7 @@
     }
   },
   "admin/network/mwan3-nat6/settings": {
-    "title": "WAN Configuration",
+    "title": "WAN 設定",
     "order": 20,
     "action": {
       "type": "view",

@@ -14,6 +14,10 @@ CURRENT_FILE="$RUNTIME_DIR/mwan3-nat6.current.$$"
 MAX_CYCLES="${NAT6_WATCH_MAX_CYCLES:-0}"
 STABLE_COUNT=0
 CYCLES=0
+REFUSAL_COUNT=0
+REFUSAL_LOG_EVERY=60
+
+umask 077
 
 cleanup() {
 	rm -f "$CANDIDATE_FILE" "$CURRENT_FILE" 2>/dev/null || :
@@ -23,6 +27,19 @@ log_message() {
 	priority="$1"
 	shift
 	logger -t mwan3-nat6-watch -p "daemon.$priority" -- "$*" 2>/dev/null || :
+}
+
+record_refusal() {
+	message="$1"
+	if [ ! -s "$CANDIDATE_FILE" ] || ! cmp -s "$CANDIDATE_FILE" "$CURRENT_FILE"; then
+		cp "$CURRENT_FILE" "$CANDIDATE_FILE"
+		REFUSAL_COUNT=0
+	fi
+	REFUSAL_COUNT=$((REFUSAL_COUNT + 1))
+	if [ "$REFUSAL_COUNT" -eq 1 ] ||
+		[ "$((REFUSAL_COUNT % REFUSAL_LOG_EVERY))" -eq 0 ]; then
+		log_message err "$message (refusal sample $REFUSAL_COUNT)"
+	fi
 }
 
 is_uint() {
@@ -120,6 +137,7 @@ is_uint "$DEBOUNCE" && [ "$DEBOUNCE" -ge 1 ] && [ "$DEBOUNCE" -le 10 ] || {
 while :; do
 	if ! "$NAT6_SCRIPT" fingerprint >"$CURRENT_FILE" 2>/dev/null; then
 		STABLE_COUNT=0
+		REFUSAL_COUNT=0
 		: >"$CANDIDATE_FILE"
 		sleep_interval
 		continue
@@ -131,6 +149,7 @@ while :; do
 	local_profile="$(printf '%s\n' "$status" | jsonfilter -e '@.local_icmp.profile' 2>/dev/null)"
 	if [ "$ready" != true ]; then
 		STABLE_COUNT=0
+		REFUSAL_COUNT=0
 		: >"$CANDIDATE_FILE"
 		sleep_interval
 		continue
@@ -140,6 +159,7 @@ while :; do
 		{ [ "$local_profile" = managed ] || [ "$local_profile" = disabled ]; }; then
 		cp "$CURRENT_FILE" "$APPLIED_FILE"
 		STABLE_COUNT=0
+		REFUSAL_COUNT=0
 		: >"$CANDIDATE_FILE"
 		sleep_interval
 		continue
@@ -148,10 +168,7 @@ while :; do
 	inactive | managed-stale | unsafe) ;;
 	managed) ;;
 	*)
-		if [ ! -s "$CANDIDATE_FILE" ] || ! cmp -s "$CANDIDATE_FILE" "$CURRENT_FILE"; then
-			log_message err "refusing automatic replacement of profile: ${profile:-unknown}"
-			cp "$CURRENT_FILE" "$CANDIDATE_FILE"
-		fi
+		record_refusal "refusing automatic replacement of profile: ${profile:-unknown}"
 		STABLE_COUNT=0
 		sleep_interval
 		continue
@@ -160,10 +177,7 @@ while :; do
 	case "$local_profile" in
 	disabled | managed | managed-stale | missing) ;;
 	*)
-		if [ ! -s "$CANDIDATE_FILE" ] || ! cmp -s "$CANDIDATE_FILE" "$CURRENT_FILE"; then
-			log_message err "refusing automatic replacement of local ICMP profile: ${local_profile:-unknown}"
-			cp "$CURRENT_FILE" "$CANDIDATE_FILE"
-		fi
+		record_refusal "refusing automatic replacement of local ICMP profile: ${local_profile:-unknown}"
 		STABLE_COUNT=0
 		sleep_interval
 		continue
@@ -190,6 +204,7 @@ while :; do
 		log_message err 'automatic NAT6 renewal failed; live rules were not accepted as current'
 	fi
 	STABLE_COUNT=0
+	REFUSAL_COUNT=0
 	: >"$CANDIDATE_FILE"
 	sleep_interval
 done

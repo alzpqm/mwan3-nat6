@@ -107,6 +107,10 @@ grep -Fq "'pin_local_icmp'" "$SETTINGS" ||
 	fail 'LuCI settings view lacks router-local ICMP pin control'
 grep -Fq 'localIcmp.profile' "$VIEW" ||
 	fail 'LuCI status view lacks router-local ICMP pin state'
+grep -Fq "nat.profile !== 'unexpected'" "$VIEW" ||
+	fail 'LuCI status view does not block Apply for unexpected NAT state'
+grep -Fq "localIcmp.profile !== 'unexpected'" "$VIEW" ||
+	fail 'LuCI status view does not block Apply for unexpected local state'
 grep -Fq 'active_wan_count' "$VIEW" || fail 'LuCI status view lacks ready-subset state'
 grep -Fq 'item.tracker' "$VIEW" || fail 'LuCI status view lacks mwan3 tracker state'
 if command -v node >/dev/null 2>&1; then

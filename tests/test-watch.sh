@@ -33,7 +33,7 @@ new_case() {
 	cat >"$CASE_DIR/state/fingerprint" <<'EOF'
 table|mwan3_nat6|2
 wan|wan1_6|pppoe-wan1|2001:db8:1::1|2001:db8:101::/56
-wan|wan2_6|pppoe-wan2|2001:db8:2::1|2001:db8:202::/56
+wan|wan2_6|pppoe-wan-c|2001:db8:2::1|2001:db8:202::/56
 EOF
 
 	cat >"$CASE_DIR/bin/uci" <<'EOF'
@@ -132,6 +132,8 @@ MOCK_CYCLES=1 run_watcher
 [ ! -e "$CASE_DIR/state/apply.calls" ] || fail 'managed profile was reapplied'
 cmp -s "$CASE_DIR/state/fingerprint" "$CASE_DIR/state/mwan3-nat6.applied" ||
 	fail 'managed fingerprint was not adopted'
+[ "$(LC_ALL=C ls -l "$CASE_DIR/state/mwan3-nat6.applied" | cut -c1-10)" = '-rw-------' ] ||
+	fail 'applied fingerprint is not mode 0600'
 
 new_case stale
 printf '%s\n' managed-stale >"$CASE_DIR/state/profile"
@@ -156,12 +158,25 @@ MOCK_LOCAL_PROFILE=missing run_watcher
 [ "$(wc -l <"$CASE_DIR/state/apply.calls")" -eq 1 ] ||
 	fail 'stable missing local ICMP chain was not applied exactly once'
 
+new_case local_stale
+printf '%s\n' managed-stale >"$CASE_DIR/state/profile"
+MOCK_LOCAL_PROFILE=managed-stale run_watcher
+[ "$CASE_RC" -eq 0 ] || fail "stale local-profile renewal returned $CASE_RC"
+[ "$(wc -l <"$CASE_DIR/state/apply.calls")" -eq 1 ] ||
+	fail 'stable stale local ICMP subset was not applied exactly once'
+
 new_case local_unexpected
 MOCK_LOCAL_PROFILE=unexpected run_watcher
 [ "$CASE_RC" -eq 0 ] || fail "unexpected local-profile monitor returned $CASE_RC"
 [ ! -e "$CASE_DIR/state/apply.calls" ] || fail 'unexpected local ICMP chain was overwritten automatically'
 grep -Fq 'refusing automatic replacement of local ICMP profile' "$CASE_DIR/state/logger.calls" ||
 	fail 'unexpected local-profile refusal was not logged'
+
+new_case periodic_refusal_log
+MOCK_LOCAL_PROFILE=unexpected MOCK_CYCLES=61 run_watcher
+[ "$CASE_RC" -eq 0 ] || fail "periodic refusal monitor returned $CASE_RC"
+[ "$(grep -c 'refusing automatic replacement of local ICMP profile' "$CASE_DIR/state/logger.calls")" -eq 2 ] ||
+	fail 'stuck local-profile refusal was not logged initially and periodically'
 
 new_case no_tracker_refresh
 printf '%s\n' inactive >"$CASE_DIR/state/profile"
@@ -176,7 +191,7 @@ printf '%s\n' managed-stale >"$CASE_DIR/state/profile"
 cat >"$CASE_DIR/state/mwan3-nat6.applied" <<'EOF'
 table|mwan3_nat6|2
 wan|wan1_6|pppoe-wan1|2001:db8:1::9|2001:db8:109::/56
-wan|wan2_6|pppoe-wan2|2001:db8:2::1|2001:db8:202::/56
+wan|wan2_6|pppoe-wan-c|2001:db8:2::1|2001:db8:202::/56
 EOF
 MOCK_REFRESH=1 run_watcher
 [ "$CASE_RC" -eq 0 ] || fail "one-change renewal returned $CASE_RC"
@@ -201,4 +216,4 @@ grep -Fq 'refresh output: RTNETLINK answers: File exists' "$CASE_DIR/state/logge
 	fail 'successful ifup warning output was not retained in the log'
 
 sh -n "$WATCHER"
-printf '%s\n' 'test-watch: PASS (10 cases)'
+printf '%s\n' 'test-watch: PASS (12 cases)'

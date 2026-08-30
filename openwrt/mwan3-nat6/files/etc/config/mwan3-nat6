@@ -6,9 +6,9 @@ config globals 'globals'
 	option refresh_mwan3_after_nat '0'
 	option pin_local_icmp '0'
 
-# Add at least two enabled WAN sections through LuCI or UCI before applying.
-# Device and expected_prefix_length are optional safety checks. When omitted,
-# the current netifd l3_device and delegated-prefix length are accepted.
+# 套用前，請先透過 LuCI 或 UCI 新增至少兩個已啟用的 WAN section。
+# device 與 expected_prefix_length 是選用的安全檢查；留空時接受 netifd
+# 目前回報的 l3_device 與委派前綴長度。
 #
 # config wan
 #	option enabled '1'

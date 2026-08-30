@@ -16,6 +16,8 @@ LUCI_ACL="$LUCI_DIR/root/usr/share/rpcd/acl.d/luci-app-mwan3-nat6.json"
 LUCI_MENU="$LUCI_DIR/root/usr/share/luci/menu.d/luci-app-mwan3-nat6.json"
 LUCI_VIEW="$LUCI_DIR/htdocs/luci-static/resources/view/mwan3-nat6/status.js"
 LUCI_SETTINGS="$LUCI_DIR/htdocs/luci-static/resources/view/mwan3-nat6/settings.js"
+LUCI_EN_PO="$LUCI_DIR/po/en/mwan3-nat6.po"
+LUCI_EN_DEFAULTS="$LUCI_DIR/po/en/luci-i18n-mwan3-nat6-en"
 SDK_BUILD="$PROJECT_ROOT/scripts/build-apk-on-sdk.sh"
 SDK_VERIFY="$PROJECT_ROOT/scripts/verify-apk-artifacts.sh"
 SOURCE_MANIFEST="$PROJECT_ROOT/scripts/source-manifest.sh"
@@ -116,6 +118,8 @@ sed -n '/^define Package\/mwan3-nat6\/postinst$/,/^endef$/p' "$PACKAGE_MAKEFILE"
 [ -s "$LUCI_MENU" ] || fail 'LuCI menu is missing'
 [ -s "$LUCI_VIEW" ] || fail 'LuCI JavaScript view is missing'
 [ -s "$LUCI_SETTINGS" ] || fail 'LuCI settings view is missing'
+[ -s "$LUCI_EN_PO" ] || fail 'LuCI English PO catalog is missing'
+[ -x "$LUCI_EN_DEFAULTS" ] || fail 'LuCI English registration script is missing or not executable'
 [ -x "$SDK_BUILD" ] || fail 'target-only SDK build helper is missing or not executable'
 sh -n "$SDK_BUILD" || fail 'target-only SDK build helper has invalid shell syntax'
 grep -Fq 'SDK_DIR="${SDK_DIR:?' "$SDK_BUILD" ||
@@ -138,6 +142,17 @@ grep -Fq 'DEPENDS:=+luci-base +mwan3-nat6' "$LUCI_MAKEFILE" ||
 	fail 'LuCI package dependencies are incomplete'
 sed -n '/^define Package\/luci-app-mwan3-nat6$/,/^endef$/p' "$LUCI_MAKEFILE" |
 	grep -Fq 'PKGARCH:=all' || fail 'LuCI package is not architecture-independent'
+grep -Fq 'PKG_BUILD_DEPENDS:=luci-base/host' "$LUCI_MAKEFILE" ||
+	fail 'LuCI package does not request the host po2lmo build tool'
+sed -n '/^define Package\/luci-i18n-mwan3-nat6-en$/,/^endef$/p' "$LUCI_MAKEFILE" |
+	grep -Fq 'PKGARCH:=all' || fail 'English language package is not architecture-independent'
+sed -n '/^define Package\/luci-i18n-mwan3-nat6-en$/,/^endef$/p' "$LUCI_MAKEFILE" |
+	grep -Fq 'DEPENDS:=+luci-app-mwan3-nat6' ||
+	fail 'English language package dependency is incomplete'
+grep -Fq '$(STAGING_DIR_HOSTPKG)/bin/po2lmo ./po/en/mwan3-nat6.po' "$LUCI_MAKEFILE" ||
+	fail 'English language package does not compile its PO catalog'
+grep -Fq '$(eval $(call BuildPackage,luci-i18n-mwan3-nat6-en))' "$LUCI_MAKEFILE" ||
+	fail 'English language package is not emitted by the package recipe'
 grep -Fq '"luci.mwan3-nat6": [ "status" ]' "$LUCI_ACL" ||
 	fail 'LuCI read ACL does not grant only the status method'
 grep -Fq '"luci.mwan3-nat6": [ "apply" ]' "$LUCI_ACL" ||
@@ -169,6 +184,12 @@ grep -Fq '/usr/nft-nat6.sh cleanup-policy' "$SDK_BUILD" ||
 	fail 'target-only APK pre-deinstall does not clean tagged RPDB rules'
 grep -Fq 'mwan3-nat6-watch' "$SDK_BUILD" ||
 	fail 'target-only APK build omits the renewal watcher'
+grep -Fq 'luci-i18n-mwan3-nat6-en-$VERSION-r1.apk' "$SDK_BUILD" ||
+	fail 'target-only APK build omits the English language artifact'
+grep -Fq 'staging_dir/hostpkg/bin/po2lmo' "$SDK_BUILD" ||
+	fail 'target-only APK build does not use the matching SDK po2lmo tool'
+grep -Fq 'depends:libc luci-app-mwan3-nat6' "$SDK_BUILD" ||
+	fail 'target-only English language APK dependencies are incomplete'
 grep -Fq 'files/etc/init.d/mwan3-nat6' "$SDK_BUILD" ||
 	fail 'target-only APK build omits the procd service'
 [ "$(grep -c '/etc/init.d/mwan3-nat6 enable' "$SDK_BUILD")" -eq 2 ] ||
@@ -181,6 +202,14 @@ grep -Fq 'run_apk core-metadata adbdump --keys-dir' "$SDK_VERIFY" ||
 	fail 'artifact verifier does not inspect v3 metadata directly'
 grep -Fq 'run_apk core-extract extract --keys-dir' "$SDK_VERIFY" ||
 	fail 'artifact verifier does not extract the core payload directly'
+grep -Fq 'run_apk i18n-signature verify --keys-dir' "$SDK_VERIFY" ||
+	fail 'artifact verifier does not validate the English language signature'
+grep -Fq 'run_apk i18n-metadata adbdump --keys-dir' "$SDK_VERIFY" ||
+	fail 'artifact verifier does not inspect English language metadata'
+grep -Fq 'run_apk i18n-extract extract --keys-dir' "$SDK_VERIFY" ||
+	fail 'artifact verifier does not extract the English language payload'
+grep -Fq 'English LMO differs from the PO source' "$SDK_VERIFY" ||
+	fail 'artifact verifier does not compare the compiled English LMO'
 grep -Fq 'cmp -s "$extracted" "$source"' "$SDK_VERIFY" ||
 	fail 'artifact verifier does not byte-compare extracted payloads'
 grep -Fq "stat -c '%a'" "$SDK_VERIFY" ||

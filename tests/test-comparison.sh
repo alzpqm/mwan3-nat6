@@ -19,9 +19,9 @@ grep -Fq 'nft -c -f "$RULE_FILE"' "$CURRENT" ||
 	fail 'hardened source lacks nft validation'
 grep -Fq 'ip6 saddr 2000::/3 ip6 saddr != %s snat ip6 prefix to %s' "$CURRENT" ||
 	fail 'current source does not exclude link-local control traffic'
-grep -Fq 'Do not deploy the historical script' "$COMPARISON" ||
+grep -Fq '不得部署歷史舊腳本' "$COMPARISON" ||
 	fail 'comparison protocol does not reject live deployment of legacy code'
-grep -Fq 'There is not yet a controlled throughput result' "$COMPARISON" ||
+grep -Fq '目前還沒有任何特定雙 WAN、三 WAN 或更多 WAN 部署的完整對照效能結果' "$COMPARISON" ||
 	fail 'comparison protocol overstates the bandwidth evidence'
 
 printf '%s\n' 'test-comparison: PASS'

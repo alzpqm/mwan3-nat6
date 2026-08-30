@@ -1,6 +1,6 @@
 {
   "luci-app-mwan3-nat6": {
-    "description": "Configure, view, and manually apply mwan3 NAT6 rules",
+    "description": "設定、查看及手動套用 mwan3 NAT6 規則",
     "read": {
       "ubus": {
         "luci.mwan3-nat6": [ "status" ]

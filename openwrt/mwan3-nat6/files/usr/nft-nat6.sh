@@ -22,6 +22,7 @@ POLICY_FILE=''
 OLD_POLICY_FILE=''
 LOCK_FILE="$RUNTIME_DIR/mwan3-nat6.apply.lock"
 LOCK_HELD=false
+POLICY_TRANSACTION=false
 WAN_COUNT=0
 READY_WAN_COUNT=0
 ALL_READY=true
@@ -43,6 +44,18 @@ POLICY_PRIORITY=1500
 POLICY_PROTOCOL=242
 
 cleanup() {
+	if [ "$POLICY_TRANSACTION" = true ] && [ -n "$OLD_POLICY_FILE" ] &&
+		[ -r "$OLD_POLICY_FILE" ]; then
+		if restore_policy_entries; then
+			logger -t nft-nat6 -- 'restored IPv6 policy rules after interrupted apply' \
+				2>/dev/null || :
+		else
+			logger -t nft-nat6 -- \
+				'ERROR: failed to restore IPv6 policy rules after interrupted apply' \
+				2>/dev/null || :
+		fi
+		POLICY_TRANSACTION=false
+	fi
 	[ -z "$WAN_FILE" ] || rm -f "$WAN_FILE" 2>/dev/null || :
 	[ -z "$RULE_FILE" ] || rm -f "$RULE_FILE" 2>/dev/null || :
 	[ -z "$POLICY_FILE" ] || rm -f "$POLICY_FILE" 2>/dev/null || :
@@ -252,6 +265,7 @@ add_policy_entries() {
 
 restore_policy_entries() {
 	current="$(mktemp "${TMPDIR:-/tmp}/mwan3-nat6-current-policy.XXXXXX")" || return 1
+	restore_rc=0
 	ip -6 rule show | awk -v priority="$POLICY_PRIORITY" -v protocol="$POLICY_PROTOCOL" '
 		$1 == priority ":" {
 			device = table = tagged = ""
@@ -263,24 +277,30 @@ restore_policy_entries() {
 			if (tagged == "yes" && device ~ /^[A-Za-z0-9_.:@+-]+$/ && table ~ /^[0-9]+$/)
 				print device "|" table
 		}' >"$current"
-	remove_policy_entries "$current" 2>/dev/null || :
+	while IFS='|' read -r device policy_table; do
+		[ -n "$device" ] || continue
+		ip -6 rule del pref "$POLICY_PRIORITY" oif "$device" lookup "$policy_table" \
+			protocol "$POLICY_PROTOCOL" >/dev/null 2>&1 || restore_rc=1
+	done <"$current"
 	while IFS='|' read -r device policy_table; do
 		[ -n "$device" ] || continue
 		ip -6 rule add pref "$POLICY_PRIORITY" oif "$device" lookup "$policy_table" \
-			protocol "$POLICY_PROTOCOL" >/dev/null 2>&1 || :
+			protocol "$POLICY_PROTOCOL" >/dev/null 2>&1 || restore_rc=1
 	done <"$OLD_POLICY_FILE"
 	rm -f "$current"
 	ip -6 route flush cache >/dev/null 2>&1 || :
+	return "$restore_rc"
 }
 
 reconcile_policy_rules() {
 	snapshot_managed_policy_rules
+	POLICY_TRANSACTION=true
 	remove_policy_entries "$OLD_POLICY_FILE" || {
-		restore_policy_entries
+		restore_policy_entries && POLICY_TRANSACTION=false
 		return 1
 	}
 	add_policy_entries "$POLICY_FILE" || {
-		restore_policy_entries
+		restore_policy_entries && POLICY_TRANSACTION=false
 		return 1
 	}
 	ip -6 route flush cache >/dev/null 2>&1 || :
@@ -558,10 +578,42 @@ generate_rules() {
 	fi
 }
 
+guard_existing_state() {
+	guard_status="$("$0" status 2>/dev/null)" ||
+		fail 'could not inspect existing NAT6 state before apply'
+	nat_profile="$(printf '%s\n' "$guard_status" |
+		jsonfilter -e '@.nat.profile' 2>/dev/null)"
+	nat_rule_count="$(printf '%s\n' "$guard_status" |
+		jsonfilter -e '@.nat.rule_count' 2>/dev/null)"
+	local_profile="$(printf '%s\n' "$guard_status" |
+		jsonfilter -e '@.local_icmp.profile' 2>/dev/null)"
+	local_rule_count="$(printf '%s\n' "$guard_status" |
+		jsonfilter -e '@.local_icmp.rule_count' 2>/dev/null)"
+	is_uint "$nat_rule_count" || fail 'could not classify existing NAT6 rule count'
+	is_uint "$local_rule_count" || fail 'could not classify existing local ICMP rule count'
+	case "$nat_profile" in
+	inactive | managed | managed-stale | unsafe) ;;
+	unexpected)
+		[ "$nat_rule_count" -eq 0 ] ||
+			fail 'refusing to replace an unexpected existing NAT6 chain'
+		;;
+	*) fail 'could not classify existing NAT6 chain ownership' ;;
+	esac
+	case "$local_profile" in
+	disabled | managed | managed-stale | missing) ;;
+	unexpected)
+		[ "$local_rule_count" -eq 0 ] ||
+			fail 'refusing to replace an unexpected existing local ICMP chain'
+		;;
+	*) fail 'could not classify existing local ICMP chain ownership' ;;
+	esac
+}
+
 apply_rules() {
 	load_configuration || fail "$CONFIG_ERROR_DETAIL"
 	[ -z "$HARD_READINESS_ERROR" ] || fail "$HARD_READINESS_ERROR"
 	[ "$READY_WAN_COUNT" -ge 1 ] || fail "${READINESS_ERROR:-no enabled WAN is ready}"
+	guard_existing_state
 	command -v lock >/dev/null 2>&1 || fail 'lock is not installed'
 	lock -n "$LOCK_FILE" || fail 'another NAT6 apply is in progress'
 	LOCK_HELD=true
@@ -583,9 +635,13 @@ apply_rules() {
 	nft -c -f "$RULE_FILE" || fail 'generated nft rules failed validation'
 	reconcile_policy_rules || fail 'could not reconcile local device IPv6 policy rules'
 	if ! nft -f "$RULE_FILE"; then
-		restore_policy_entries
-		fail 'could not replace nft rules'
+		if restore_policy_entries; then
+			POLICY_TRANSACTION=false
+			fail 'could not replace nft rules'
+		fi
+		fail 'could not replace nft rules or restore prior IPv6 policy rules'
 	fi
+	POLICY_TRANSACTION=false
 
 	logger -t nft-nat6 -- \
 		"installed $READY_WAN_COUNT/$WAN_COUNT ready-WAN prefix NAT in inet $TABLE ($((READY_WAN_COUNT * READY_WAN_COUNT)) NAT rules; local device policy $PIN_LOCAL_ICMP)" \
@@ -689,6 +745,8 @@ emit_status() {
 	local_profile='disabled'
 	local_exact=true
 	local_safe_count=0
+	local_owned_count=0
+	local_owned_unique=true
 	local_chain_safe=false
 	mark_digits="$(printf '%s\n' "$MMX_DEFAULT" | tr 'A-F' 'a-f' | sed 's/^0x0*//')"
 	[ "$PIN_LOCAL_ICMP" = false ] || local_expected_rule_count="$READY_WAN_COUNT"
@@ -708,9 +766,16 @@ emit_status() {
 	if [ "$PIN_LOCAL_ICMP" = true ]; then
 		while IFS='|' read -r section label logical expected_device device expected_mask \
 			address prefix prefix_mask state; do
+			local_comment="comment \"mwan3-nat6 local ICMP pin $logical\""
+			comment_count="$(printf '%s\n' "$local_rules" |
+				grep -F -c "$local_comment")"
+			case "$comment_count" in
+			0) ;;
+			1) local_owned_count=$((local_owned_count + 1)) ;;
+			*) local_owned_unique=false ;;
+			esac
 			[ "$state" = ready ] || continue
 			local_prefix="ip6 saddr $address"
-			local_comment="comment \"mwan3-nat6 local ICMP pin $logical\""
 			[ "$(printf '%s\n' "$local_rules" | grep -F "$local_prefix" |
 				grep -F 'icmpv6 type echo-request' |
 				grep -F "$local_comment" |
@@ -727,6 +792,8 @@ emit_status() {
 			local_profile='missing'
 		elif [ "$local_chain_safe" = true ] &&
 			[ "$local_rule_count" -eq "$local_safe_count" ] &&
+			[ "$local_rule_count" -eq "$local_owned_count" ] &&
+			[ "$local_owned_unique" = true ] &&
 			[ "$local_rule_count" -gt 0 ]; then
 			local_profile='managed-stale'
 		else
@@ -741,7 +808,7 @@ emit_status() {
 	fi
 
 	policy_rules="$(ip -6 rule show 2>/dev/null)"
-	policy_rule_count="$(printf '%s\n' "$policy_rules" | awk \
+	policy_tuples="$(printf '%s\n' "$policy_rules" | awk \
 		-v priority="$POLICY_PRIORITY" -v protocol="$POLICY_PROTOCOL" '
 		$1 == priority ":" {
 			device = table = tagged = ""
@@ -750,11 +817,17 @@ emit_status() {
 				if ($i == "lookup") table = $(i + 1)
 				if (($i == "proto" || $i == "protocol") && $(i + 1) == protocol) tagged = "yes"
 			}
-			if (tagged == "yes" && device ~ /^[A-Za-z0-9_.:@+-]+$/ && table ~ /^[0-9]+$/) count++
+			if (tagged == "yes" && device ~ /^[A-Za-z0-9_.:@+-]+$/ && table ~ /^[0-9]+$/)
+				print device "|" table
 		}
-		END { print count + 0 }')"
+		')"
+	policy_rule_count="$(printf '%s\n' "$policy_tuples" |
+		awk 'NF { count++ } END { print count + 0 }')"
 	policy_expected_rule_count=0
 	policy_exact=true
+	policy_owned=true
+	policy_owned_count=0
+	seen_policy_devices='|'
 	[ "$PIN_LOCAL_ICMP" = false ] || policy_expected_rule_count="$READY_WAN_COUNT"
 	if [ "$PIN_LOCAL_ICMP" = true ]; then
 		while IFS='|' read -r logical device policy_table; do
@@ -774,10 +847,38 @@ emit_status() {
 				END { print count + 0 }')"
 			[ "$matches" -eq 1 ] || policy_exact=false
 		done <"$POLICY_FILE"
+		while IFS='|' read -r device policy_table; do
+			[ -n "$device" ] || continue
+			case "$seen_policy_devices" in
+			*"|$device|"*) policy_owned=false; continue ;;
+			esac
+			seen_policy_devices="$seen_policy_devices$device|"
+			if awk -F '|' -v wanted_device="$device" -v wanted_table="$policy_table" '
+				$2 == wanted_device && $3 == wanted_table { found++ }
+				END { exit found == 1 ? 0 : 1 }
+			' "$POLICY_FILE"; then
+				policy_owned_count=$((policy_owned_count + 1))
+				continue
+			fi
+			if awk -F '|' -v wanted_device="$device" '
+				($4 == wanted_device || $5 == wanted_device) && $10 != "ready" { found++ }
+				END { exit found == 1 ? 0 : 1 }
+			' "$WAN_FILE"; then
+				policy_owned_count=$((policy_owned_count + 1))
+				continue
+			fi
+			policy_owned=false
+		done <<EOF
+$policy_tuples
+EOF
 		if [ "$policy_rule_count" -ne "$policy_expected_rule_count" ] ||
 			[ "$policy_exact" != true ]; then
 			if [ "$policy_rule_count" -eq 0 ]; then
-				local_profile='missing'
+				[ "$local_profile" = unexpected ] || local_profile='missing'
+			elif [ "$policy_owned" = true ] &&
+				[ "$policy_owned_count" -eq "$policy_rule_count" ] &&
+				[ "$local_profile" != unexpected ]; then
+				local_profile='managed-stale'
 			else
 				local_profile='unexpected'
 			fi

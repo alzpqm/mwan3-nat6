@@ -1,5 +1,89 @@
 # Changelog
 
+## 0.0.36 - 2026-08-30
+
+- 延續 0.0.35 已通過的正體中文、英文語言包、隱私修正與完全相同的
+  執行期程式。
+- 0.0.35 在任何 GitHub 寫入前，因遠端檢查誤在沒有 `origin` 的私有
+  根工作樹執行而停止；公開 main、tag 與 Release 均未變更。
+- 所有 GitHub 遠端檢查與推送固定指定獨立匿名公開工作樹，避免目前
+  工作目錄影響發佈命令。
+
+## 0.0.35 - 2026-08-30
+
+- 延續 0.0.34 已通過的正體中文、英文語言包與完全相同的執行期邏輯。
+- 0.0.34 在 GitHub 寫入前的匿名隱私閘門發現文件與測試範例仍使用一個
+  與實機相同的第三 WAN 裝置名稱，因此封存且未建立 commit、tag 或
+  Release。
+- 將公開範例與測試裝置改為不對應任何實機的 `pppoe-wan-c`；不改動
+  套件讀取使用者 UCI 裝置名稱的能力。
+
+## 0.0.34 - 2026-08-30
+
+- 延續 0.0.33 已成功安裝的正體中文介面、英文語言包與完全相同的
+  NAT／RPDB／watcher／mwan3 行為。
+- 0.0.33 的最終稽核又使用一個不存在的手寫介面字串，因此雖然安裝、
+  網路狀態與其餘稽核均通過，仍依版本規則封存。
+- 實機 UI 驗證改以安裝檔案對已測試來源的 SHA-256 為唯一依據；來源
+  本身已通過 119 條正體中文對英文翻譯測試，不再抽樣猜測畫面文字。
+
+## 0.0.33 - 2026-08-30
+
+- 延續 0.0.32 已成功安裝的正體中文介面、獨立英文語言包及相同執行期
+  程式；不變更 NAT、RPDB、watcher 或 mwan3 行為。
+- 0.0.32 的安裝本身通過，但最終唯讀稽核使用了不存在的介面字串，並
+  假設實機 BusyBox 提供 `diff` 與 `pgrep -c`，因此依版本規則封存。
+- 0.0.33 的實機稽核只比對來源中確定存在的正體中文文字，並限制為
+  OpenWrt BusyBox 實際支援的命令。
+
+## 0.0.32 - 2026-08-30
+
+- 延續 0.0.31 已通過的正體中文介面、獨立英文語言包與所有執行期
+  行為，不變更 nft、RPDB、watcher 或 mwan3 分流邏輯。
+- 0.0.31 的來源 tar 在 macOS 產生 AppleDouble `._*` 檔案，導致 Debian
+  傳輸 manifest 在 SDK builder 執行前拒絕建置；0.0.32 的傳輸明確停用
+  macOS copyfile 延伸資料，避免把非專案檔案帶入 SDK。
+
+## 0.0.31 - 2026-08-30
+
+- 延續 0.0.30 的正體中文介面與獨立英文語言包；核心 nft、RPDB、
+  watcher 與 mwan3 分流程式沒有變更。
+- 修正比較文件翻譯後仍搜尋舊英文安全聲明的測試，改為核對文件中的
+  正體中文原文。
+- 語言測試改由 `VERSION` 取得英文語言包檔名，避免下一版再次因文件
+  內的硬編碼版本造成假失敗。
+- 0.0.30 在 SDK 建置與實機安裝前，因上述過期測試契約而未通過完整
+  本機閘門；依版本規則封存，不沿用該版本測試。
+
+## 0.0.30 - 2026-08-30
+
+- 將 LuCI 主介面、選單及套件說明固定為自然的正體中文，技術名詞依
+  OpenWrt 與台灣網路管理的常用說法整理，避免生硬逐字翻譯。
+- 新增獨立的 `luci-i18n-mwan3-nat6-en` 英文語言包；主套件不依賴此
+  語言包，安裝後才會提供英文介面。
+- 延續 0.0.29 已完成的 2→3 WAN 生命週期修復；不變更 nft、RPDB、
+  watcher 或 mwan3 分流行為。
+- 將所有可執行測試腳本統一為 0755，避免公開暫存工作樹保留舊權限而
+  再次造成來源 manifest 不一致。
+- 0.0.29 已通過實機測試，但匿名發佈閘門發現暫存工作樹的一個檔案
+  權限與來源 manifest 不符，因此未建立 commit、tag 或 GitHub Release；
+  依版本規則封存，後續版本不再沿用該候選版。
+
+## 0.0.29 - 2026-08-30
+
+- Repair the real ready-subset lifecycle regression found after 0.0.28:
+  package-owned two-WAN nft/RPDB state is now classified as managed-stale and
+  automatically expands when a third WAN returns; shrink transitions are
+  covered as well.
+- Keep wrong-table, duplicate, foreign-device, and nonempty unexpected chains
+  refused by the watcher and by manual/LuCI RPC Apply.
+- Restore and verify the prior tagged RPDB set when nft apply fails or a handled
+  interruption lands between policy reconciliation and nft commit.
+- Periodically repeat a persistent refusal warning without log spam, and create
+  watcher fingerprint files with mode 0600.
+- Seal 0.0.28 after live monitoring remained stuck at NAT 4/9 and local nft/
+  RPDB 2/3 while all three WANs had recovered and mwan3 was balancing 33/33/33.
+
 ## 0.0.28 - 2026-08-29
 
 - Replace the insufficient output-hook-only NextTrace workaround with an
