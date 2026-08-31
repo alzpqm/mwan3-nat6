@@ -16,14 +16,14 @@ proxy 或提供單一連線頻寬綁定。獨立更新監看與路由器本機�
 在使用 apk 的 OpenWrt 25.12 以上版本，安裝核心與 LuCI：
 
 ```sh
-apk --no-network add mwan3-nat6-0.0.36-r1.apk
-apk --no-network add luci-app-mwan3-nat6-0.0.36-r1.apk
+apk --no-network add mwan3-nat6-0.0.41-r1.apk
+apk --no-network add luci-app-mwan3-nat6-0.0.41-r1.apk
 ```
 
 LuCI 預設使用正體中文。如需英文，再安裝同版本的獨立語言包：
 
 ```sh
-apk --no-network add luci-i18n-mwan3-nat6-en-0.0.36-r1.apk
+apk --no-network add luci-i18n-mwan3-nat6-en-0.0.41-r1.apk
 ```
 
 英文包只會加入可選語言，不會自動切換目前 LuCI 語言。舊版 opkg 系統
@@ -155,9 +155,10 @@ PPP `oif` 裝置對應到唯一且 IPv6 default route 確實使用該裝置的 m
 
 核心會先驗證所有介面，再把必要物件與規則組成單一 nftables 批次。
 驗證失敗時必須保留舊 chain，不可留下空資料表或空 chain。替換前，現有
-非空 chain 必須被辨識為 `managed`、`managed-stale` 或已知舊版
-`unsafe`；手動／RPC Apply 與 watcher 都會拒絕 `unexpected`。請使用專屬
-資料表，不得指向 `fw4` 或其他共用資料表。
+chain 必須被辨識為 `managed`、`managed-stale` 或已知舊版 `unsafe`；
+即使 chain 目前沒有規則，手動／RPC Apply 與 watcher 也會拒絕
+`unexpected`。請使用專屬資料表；核心與 LuCI 會直接拒絕 `fw4`，也不得
+指向其他共用資料表。
 
 移除或降級主套件時，pre-deinstall 會呼叫
 `/usr/nft-nat6.sh cleanup-policy`，避免 protocol 242 RPDB 規則殘留。

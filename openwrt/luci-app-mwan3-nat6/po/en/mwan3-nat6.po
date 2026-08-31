@@ -1,8 +1,8 @@
 # English language pack for the Traditional Chinese mwan3-nat6 interface.
-# Generated from the fixed 0.0.36 Traditional Chinese source strings.
+# Generated from the fixed 0.0.41 Traditional Chinese source strings.
 msgid ""
 msgstr ""
-"Project-Id-Version: mwan3-nat6 0.0.36\n"
+"Project-Id-Version: mwan3-nat6 0.0.41\n"
 "PO-Revision-Date: 2026-08-30 00:00+0000\n"
 "Last-Translator: mwan3-nat6 <mwan3-nat6@users.noreply.github.com>\n"
 "Language-Team: English\n"
@@ -99,6 +99,10 @@ msgstr "nftables table"
 #: status.js
 msgid "nftables 資料表名稱無效。"
 msgstr "The nftables table name is invalid."
+
+#: settings.js status.js
+msgid "fw4 是 OpenWrt 共用的防火牆資料表，請改用專屬名稱。"
+msgstr "fw4 is OpenWrt's shared firewall table. Use a dedicated name."
 
 #: status.js
 msgid "上線"

@@ -338,6 +338,10 @@ load_configuration() {
 		set_config_error 'invalid-table' "invalid nft table name: $TABLE"
 		return 1
 	}
+	[ "$TABLE" != 'fw4' ] || {
+		set_config_error 'reserved-table' 'fw4 is a shared firewall table; use a dedicated table'
+		return 1
+	}
 	monitor_value="$(uci_get globals monitor)"
 	MONITOR_ENABLED="$(read_bool "$monitor_value" 0)" || {
 		set_config_error 'invalid-monitor' 'globals has an invalid monitor value'
@@ -594,16 +598,14 @@ guard_existing_state() {
 	case "$nat_profile" in
 	inactive | managed | managed-stale | unsafe) ;;
 	unexpected)
-		[ "$nat_rule_count" -eq 0 ] ||
-			fail 'refusing to replace an unexpected existing NAT6 chain'
+		fail 'refusing to replace an unexpected existing NAT6 chain'
 		;;
 	*) fail 'could not classify existing NAT6 chain ownership' ;;
 	esac
 	case "$local_profile" in
 	disabled | managed | managed-stale | missing) ;;
 	unexpected)
-		[ "$local_rule_count" -eq 0 ] ||
-			fail 'refusing to replace an unexpected existing local ICMP chain'
+		fail 'refusing to replace an unexpected existing local ICMP chain'
 		;;
 	*) fail 'could not classify existing local ICMP chain ownership' ;;
 	esac
@@ -801,7 +803,8 @@ emit_status() {
 		fi
 	elif [ "$local_present" = true ] &&
 		[ "$local_chain_safe" = true ] &&
-		[ "$local_rule_count" -eq "$local_safe_count" ]; then
+		[ "$local_rule_count" -eq "$local_safe_count" ] &&
+		[ "$local_rule_count" -gt 0 ]; then
 		local_profile='managed-stale'
 	elif [ "$local_present" = true ]; then
 		local_profile='unexpected'

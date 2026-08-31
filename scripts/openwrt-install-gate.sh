@@ -92,14 +92,24 @@ assert_eq "$LUCI_SHA" "$(file_sha "$LUCI_APK")" 'LuCI package SHA-256'
 
 sha256sum /etc/config/mwan3-nat6 /etc/config/mwan3 /etc/config/network \
 	/etc/config/firewall >"$RUN_ROOT/pre-uci.sha256"
-nft -a list chain inet myrules srcnat >"$RUN_ROOT/pre-chain.nft"
+/usr/nft-nat6.sh status >"$RUN_ROOT/pre-status.json"
+NAT_TABLE="$(jsonfilter -i "$RUN_ROOT/pre-status.json" -e '@.nat.table')"
+printf '%s\n' "$NAT_TABLE" | grep -Eq '^[A-Za-z_][A-Za-z0-9_]*$' ||
+	fail 'status returned an unsafe nft table name'
+[ "$NAT_TABLE" != fw4 ] || fail 'status returned the shared fw4 table'
+nft -a list chain inet "$NAT_TABLE" srcnat >"$RUN_ROOT/pre-chain.nft"
 ubus call service list '{"name":"mwan3-nat6"}' >"$RUN_ROOT/pre-service.json"
+pre_pid="$(jsonfilter -i "$RUN_ROOT/pre-service.json" \
+	-e '@["mwan3-nat6"]["instances"]["instance1"]["pid"]' 2>/dev/null || true)"
+case "$pre_pid" in
+'' | *[!0-9]*) pre_pid='' ;;
+esac
 
 apk --no-network add --simulate --allow-untrusted "$CORE_APK" "$LUCI_APK" \
 	>"$RUN_ROOT/simulation.txt" 2>&1
 sha256sum /etc/config/mwan3-nat6 /etc/config/mwan3 /etc/config/network \
 	/etc/config/firewall >"$RUN_ROOT/post-simulation-uci.sha256"
-nft -a list chain inet myrules srcnat >"$RUN_ROOT/post-simulation-chain.nft"
+nft -a list chain inet "$NAT_TABLE" srcnat >"$RUN_ROOT/post-simulation-chain.nft"
 cmp -s "$RUN_ROOT/pre-uci.sha256" "$RUN_ROOT/post-simulation-uci.sha256" ||
 	fail 'simulation changed a protected UCI file'
 cmp -s "$RUN_ROOT/pre-chain.nft" "$RUN_ROOT/post-simulation-chain.nft" ||
@@ -109,9 +119,25 @@ MUTATION_STARTED=1
 apk --no-network add --allow-untrusted "$CORE_APK" "$LUCI_APK" \
 	>"$RUN_ROOT/install.txt" 2>&1
 i=0
-until /etc/init.d/mwan3-nat6 running; do
+
+while :; do
+	ubus call service list '{"name":"mwan3-nat6"}' >"$RUN_ROOT/service-settle.json"
+	settled_running="$(jsonfilter -i "$RUN_ROOT/service-settle.json" \
+		-e '@["mwan3-nat6"]["instances"]["instance1"]["running"]' 2>/dev/null || true)"
+	settled_pid="$(jsonfilter -i "$RUN_ROOT/service-settle.json" \
+		-e '@["mwan3-nat6"]["instances"]["instance1"]["pid"]' 2>/dev/null || true)"
+	settled_command="$(jsonfilter -i "$RUN_ROOT/service-settle.json" \
+		-e '@["mwan3-nat6"]["instances"]["instance1"]["command"][0]' 2>/dev/null || true)"
+	case "$settled_pid" in
+	'' | *[!0-9]*) settled_pid='' ;;
+	esac
+	if [ "$settled_running" = true ] && [ -n "$settled_pid" ] &&
+		[ "$settled_command" = /usr/sbin/mwan3-nat6-watch ] &&
+		{ [ -z "$pre_pid" ] || [ "$settled_pid" != "$pre_pid" ]; }; then
+		break
+	fi
 	i=$((i + 1))
-	[ "$i" -lt 10 ] || fail 'project watcher did not become running'
+	[ "$i" -lt 15 ] || fail 'project watcher did not complete its post-upgrade restart'
 	sleep 1
 done
 
@@ -123,7 +149,7 @@ grep -q "^luci-app-mwan3-nat6-$VERSION-r1 " "$RUN_ROOT/installed-packages.txt" |
 
 sha256sum /etc/config/mwan3-nat6 /etc/config/mwan3 /etc/config/network \
 	/etc/config/firewall >"$RUN_ROOT/post-install-uci.sha256"
-nft -a list chain inet myrules srcnat >"$RUN_ROOT/post-install-chain.nft"
+nft -a list chain inet "$NAT_TABLE" srcnat >"$RUN_ROOT/post-install-chain.nft"
 cmp -s "$RUN_ROOT/pre-uci.sha256" "$RUN_ROOT/post-install-uci.sha256" ||
 	fail 'installation changed a protected UCI file'
 cmp -s "$RUN_ROOT/pre-chain.nft" "$RUN_ROOT/post-install-chain.nft" ||
@@ -135,6 +161,7 @@ sha256sum -c "$PAYLOAD_MANIFEST" >"$RUN_ROOT/payload-check.txt"
 ubus call service list '{"name":"mwan3-nat6"}' >"$RUN_ROOT/post-service.json"
 assert_eq true "$(jsonfilter -i "$RUN_ROOT/post-service.json" -e '@["mwan3-nat6"]["instances"]["instance1"]["running"]')" 'ubus running'
 assert_eq /usr/sbin/mwan3-nat6-watch "$(jsonfilter -i "$RUN_ROOT/post-service.json" -e '@["mwan3-nat6"]["instances"]["instance1"]["command"][0]')" 'ubus command'
+assert_eq "$settled_pid" "$(jsonfilter -i "$RUN_ROOT/post-service.json" -e '@["mwan3-nat6"]["instances"]["instance1"]["pid"]')" 'stable post-upgrade watcher PID'
 
 /usr/nft-nat6.sh status >"$RUN_ROOT/status.json"
 assert_eq true "$(jsonfilter -i "$RUN_ROOT/status.json" -e '@.ok')" 'status ok'

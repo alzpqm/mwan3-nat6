@@ -30,6 +30,8 @@ function validateLabel(sectionId, value) {
 function validateTable(sectionId, value) {
 	if (!value || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(value))
 		return _('名稱須以英文字母或底線開頭，且只能包含英文字母、數字與底線。');
+	if (value === 'fw4')
+		return _('fw4 是 OpenWrt 共用的防火牆資料表，請改用專屬名稱。');
 	return true;
 }
 

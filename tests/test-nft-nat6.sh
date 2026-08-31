@@ -111,7 +111,8 @@ show)
 get)
 	case "$key" in
 	mwan3-nat6.globals.table)
-		[ "${MOCK_BAD_TABLE:-0}" != '1' ] && printf '%s\n' 'mwan3_nat6' || printf '%s\n' 'bad-table'
+		[ "${MOCK_BAD_TABLE:-0}" != '1' ] &&
+			printf '%s\n' "${MOCK_TABLE_NAME:-mwan3_nat6}" || printf '%s\n' 'bad-table'
 		;;
 	mwan3-nat6.globals.monitor) printf '%s\n' "${MOCK_MONITOR:-0}" ;;
 	mwan3-nat6.globals.interval) printf '%s\n' "${MOCK_INTERVAL:-15}" ;;
@@ -254,7 +255,13 @@ fi
 if [ "$1" = 'list' ] && [ "$2" = 'chain' ]; then
 	chain="$5"
 	case "$chain" in
-	srcnat) [ "${MOCK_CHAIN:-present}" = 'present' ] || exit 1 ;;
+	srcnat)
+		if [ -n "${MOCK_CHAIN:-}" ]; then
+			[ "$MOCK_CHAIN" = 'present' ] || exit 1
+		else
+			grep -Eq '^add chain inet [^ ]+ srcnat ' "$MOCK_STATE/live.rules" 2>/dev/null || exit 1
+		fi
+		;;
 	local_icmp)
 		if [ -n "${MOCK_LOCAL_CHAIN:-}" ]; then
 			[ "$MOCK_LOCAL_CHAIN" = 'present' ] || exit 1
@@ -839,6 +846,38 @@ assert_rc 1
 assert_contains 'invalid nft table name' "$CASE_DIR/stderr"
 assert_no_nft_calls
 
+new_case reserved_fw4_table
+run_apply MOCK_WAN_COUNT=2 MOCK_TABLE_NAME=fw4
+assert_rc 1
+assert_contains 'fw4 is a shared firewall table' "$CASE_DIR/stderr"
+assert_no_nft_calls
+run_status MOCK_WAN_COUNT=2 MOCK_TABLE_NAME=fw4
+assert_rc 0
+assert_contains '"error":"reserved-table"' "$CASE_DIR/stdout"
+
+new_case foreign_empty_nat_chain
+: >"$CASE_DIR/state/live.rules"
+run_apply MOCK_WAN_COUNT=2 MOCK_CHAIN=present MOCK_LOCAL_CHAIN=absent
+assert_rc 1
+assert_contains 'refusing to replace an unexpected existing NAT6 chain' "$CASE_DIR/stderr"
+[ ! -e "$CASE_DIR/state/apply.batch" ] ||
+	fail 'apply replaced a foreign empty NAT6 chain'
+[ ! -s "$CASE_DIR/state/live.rules" ] ||
+	fail 'foreign empty NAT6 chain fixture changed'
+
+new_case foreign_empty_local_chain
+run_apply MOCK_WAN_COUNT=2
+assert_rc 0
+cp "$CASE_DIR/state/live.rules" "$CASE_DIR/state/live.before-refusal"
+rm -f "$CASE_DIR/state/apply.batch"
+run_apply MOCK_WAN_COUNT=2 MOCK_LOCAL_CHAIN=present
+assert_rc 1
+assert_contains 'refusing to replace an unexpected existing local ICMP chain' "$CASE_DIR/stderr"
+[ ! -e "$CASE_DIR/state/apply.batch" ] ||
+	fail 'apply replaced a foreign empty local ICMP chain'
+cmp -s "$CASE_DIR/state/live.before-refusal" "$CASE_DIR/state/live.rules" ||
+	fail 'foreign empty local ICMP chain fixture changed'
+
 new_case invalid_index
 run_apply MOCK_WAN_COUNT=2 MOCK_BAD_INDEX=1
 assert_rc 1
@@ -954,4 +993,4 @@ assert_rc 1
 assert_contains 'uci is not installed' "$CASE_DIR/stderr"
 assert_no_nft_calls
 
-printf '%s\n' 'test-nft-nat6: PASS (60 cases)'
+printf '%s\n' 'test-nft-nat6: PASS (63 cases)'

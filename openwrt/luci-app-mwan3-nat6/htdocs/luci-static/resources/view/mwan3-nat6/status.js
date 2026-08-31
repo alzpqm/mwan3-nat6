@@ -78,6 +78,7 @@ function errorLabel(error) {
 		'too-few-wans': _('至少要啟用兩條 WAN。'),
 		'too-many-wans': _('啟用的 WAN 數量超過上限。'),
 		'invalid-table': _('nftables 資料表名稱無效。'),
+		'reserved-table': _('fw4 是 OpenWrt 共用的防火牆資料表，請改用專屬名稱。'),
 		'invalid-monitor': _('自動監看設定無效。'),
 		'invalid-refresh-mwan3-after-nat': _('mwan3 追蹤器更新設定無效。'),
 		'invalid-pin-local-icmp': _('路由器本機的裝置綁定設定無效。'),

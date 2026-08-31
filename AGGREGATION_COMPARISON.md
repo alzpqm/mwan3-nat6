@@ -2,7 +2,7 @@
 
 ## 目前結論
 
-0.0.36 支援 2 至 32 條已設定的 IPv6 WAN。就緒 WAN 為 N 條時，會產生
+0.0.41 支援 2 至 32 條已設定的 IPv6 WAN。就緒 WAN 為 N 條時，會產生
 N × (N − 1) 條精確 cross-SNAT，加上 N 條安全的 prefix-SNAT，總數為 N²。
 
 | 就緒 WAN | cross-SNAT | prefix-SNAT | 規則總數 |
