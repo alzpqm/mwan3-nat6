@@ -4,7 +4,7 @@
 mwan3 負責為每條連線選擇送出介面，本套件則把來源位址轉換成該介面
 可路由的委派前綴，兩者各自處理不同工作。
 
-0.0.41 支援 2 至 32 條 IPv6 WAN，並提供 LuCI 設定頁、netifd／mwan3
+0.0.47 支援 2 至 32 條 IPv6 WAN，並提供 LuCI 設定頁、netifd／mwan3
 追蹤狀態、流量計數、受保護的手動套用，以及選用的自動更新監看。
 
 ## 語言
@@ -13,7 +13,7 @@ mwan3 負責為每條連線選擇送出介面，本套件則把來源位址轉�
 英文介面，請另外安裝同版本的選用套件：
 
 ```sh
-apk --no-network add luci-i18n-mwan3-nat6-en-0.0.41-r1.apk
+apk --no-network add luci-i18n-mwan3-nat6-en-0.0.47-r1.apk
 ```
 
 英文包只會把 English 加入 LuCI 的語言選單，不會擅自變更目前使用的

@@ -101,38 +101,137 @@ function errorLabel(error) {
 	return labels[error] || error || _('未知的狀態錯誤。');
 }
 
-function interfaceTable(interfaces) {
-	var table = E('table', { 'class': 'table' }, [
-		E('tr', { 'class': 'tr table-titles' }, [
-			E('th', { 'class': 'th' }, _('WAN')),
-			E('th', { 'class': 'th' }, _('netifd 狀態')),
-			E('th', { 'class': 'th' }, _('mwan3 追蹤')),
-			E('th', { 'class': 'th' }, _('委派前綴')),
-			E('th', { 'class': 'th' }, _('接收 / 傳送')),
-			E('th', { 'class': 'th' }, _('錯誤 / 丟棄'))
-		])
+function dashboardStyles() {
+	return E('style', {}, [
+		'#mwan3-nat6-dashboard{--nat6-accent:#2563eb;--nat6-accent-2:#0f766e;--nat6-good:#059669;--nat6-warn:#d97706;--nat6-bad:#dc2626;--nat6-line:rgba(127,127,127,.24);--nat6-soft:rgba(127,127,127,.08);max-width:1180px;margin:0 auto}',
+		'#mwan3-nat6-dashboard *{box-sizing:border-box}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-hero{position:relative;overflow:hidden;margin:0 0 1.25rem;padding:1.5rem;border-radius:1rem;background:linear-gradient(135deg,#173a8a 0%,#146b76 100%);box-shadow:0 12px 32px rgba(15,23,42,.18);color:#fff}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-hero:after{content:"";position:absolute;right:-4rem;bottom:-6rem;width:16rem;height:16rem;border:2.5rem solid rgba(255,255,255,.08);border-radius:50%}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-hero-content{position:relative;z-index:1;max-width:780px}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-eyebrow{margin:0 0 .45rem;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.82}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-title-row{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-title-row h2{margin:0;color:#fff;font-size:clamp(1.45rem,3vw,2.15rem);line-height:1.2}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-summary{margin:.85rem 0 0;max-width:68ch;font-size:1rem;line-height:1.65;color:rgba(255,255,255,.92)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-error{margin:.65rem 0 0;padding:.6rem .75rem;border-radius:.55rem;background:rgba(127,29,29,.35)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-error a{color:#fff;text-decoration:underline}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-badge{display:inline-flex;align-items:center;gap:.38rem;padding:.28rem .58rem;border-radius:999px;font-size:.76rem;font-weight:700;line-height:1.2;white-space:nowrap}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-badge:before{content:"";width:.48rem;height:.48rem;border-radius:50%;background:currentColor}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-badge.good{color:#047857;background:rgba(16,185,129,.14)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-badge.warning{color:#b45309;background:rgba(245,158,11,.16)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-badge.danger{color:#b91c1c;background:rgba(239,68,68,.14)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-hero .mwan3-nat6-badge{color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;margin:0 0 1.25rem}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-metric{min-width:0;padding:1rem;border:1px solid var(--nat6-line);border-radius:.8rem;background:var(--nat6-soft)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-metric-label{margin:0 0 .35rem;font-size:.78rem;font-weight:700;opacity:.66}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-metric-value{display:block;margin:0 0 .28rem;font-size:1.45rem;font-weight:750;line-height:1.2;overflow-wrap:anywhere}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-metric-detail{font-size:.78rem;line-height:1.45;opacity:.7}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-section{margin:0 0 1.1rem;padding:1.15rem;border:1px solid var(--nat6-line);border-radius:.9rem;background:rgba(127,127,127,.035)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin:0 0 .9rem}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-section h3{margin:0 0 .25rem;font-size:1.08rem}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-section-intro{margin:0;font-size:.84rem;line-height:1.5;opacity:.68}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-wan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:.8rem}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-wan{min-width:0;padding:1rem;border:1px solid var(--nat6-line);border-top:3px solid var(--nat6-good);border-radius:.75rem;background:var(--nat6-soft)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-wan.warning{border-top-color:var(--nat6-warn)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-wan.danger{border-top-color:var(--nat6-bad)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-wan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.8rem}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-wan h4{margin:0 0 .18rem;font-size:1rem;overflow-wrap:anywhere}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-identity{font-size:.75rem;opacity:.62;overflow-wrap:anywhere}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-prefix{margin:0 0 .85rem;padding:.58rem .65rem;border-radius:.5rem;background:rgba(127,127,127,.1);font-family:monospace;font-size:.8rem;overflow-wrap:anywhere}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-data-label{display:block;margin-bottom:.15rem;font-size:.7rem;font-weight:700;opacity:.58}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-data-value{display:block;font-size:.86rem;font-weight:650;overflow-wrap:anywhere}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-detail{padding:.85rem;border-left:3px solid var(--nat6-accent);border-radius:.3rem .65rem .65rem .3rem;background:var(--nat6-soft)}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-detail h4{margin:0 0 .4rem;font-size:.9rem}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-detail p{margin:0;font-size:.82rem;line-height:1.55}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-comparison{overflow-x:auto}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-note{margin:.8rem 0 0;font-size:.8rem;line-height:1.55;opacity:.7}',
+		'#mwan3-nat6-dashboard .cbi-page-actions{display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap;margin-top:1rem}',
+		'@media (prefers-color-scheme:dark){#mwan3-nat6-dashboard .mwan3-nat6-badge.good{color:#6ee7b7}#mwan3-nat6-dashboard .mwan3-nat6-badge.warning{color:#fbbf24}#mwan3-nat6-dashboard .mwan3-nat6-badge.danger{color:#fca5a5}}',
+		'@media (max-width:900px){#mwan3-nat6-dashboard .mwan3-nat6-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#mwan3-nat6-dashboard .mwan3-nat6-detail-grid{grid-template-columns:1fr}}',
+		'@media (max-width:520px){#mwan3-nat6-dashboard .mwan3-nat6-hero{padding:1.15rem}#mwan3-nat6-dashboard .mwan3-nat6-metric-grid{grid-template-columns:1fr}#mwan3-nat6-dashboard .mwan3-nat6-section{padding:.9rem}#mwan3-nat6-dashboard .mwan3-nat6-wan-grid{grid-template-columns:1fr}#mwan3-nat6-dashboard .cbi-page-actions .btn{width:100%;text-align:center}}'
 	]);
+}
 
-	(interfaces || []).forEach(function(item) {
-		table.appendChild(E('tr', { 'class': 'tr' }, [
-			E('td', { 'class': 'td' }, [
-				E('strong', {}, item.label || item.logical || '-'),
-				E('br'),
-				E('small', {}, '%s · %s'.format(item.logical || '-', item.device || '-'))
+function badge(label, tone) {
+	return E('span', { 'class': 'mwan3-nat6-badge ' + tone }, label);
+}
+
+function interfaceTone(item) {
+	if (item.state === 'ready' && (!item.tracker || !item.tracker.tracked || item.tracker.state === 'online'))
+		return 'good';
+	if (item.state === 'down' || item.state === 'unavailable' || (item.tracker && item.tracker.state === 'offline'))
+		return 'warning';
+	return 'danger';
+}
+
+function metricCard(label, value, detail) {
+	return E('div', { 'class': 'mwan3-nat6-metric' }, [
+		E('div', { 'class': 'mwan3-nat6-metric-label' }, label),
+		E('strong', { 'class': 'mwan3-nat6-metric-value' }, value),
+		E('div', { 'class': 'mwan3-nat6-metric-detail' }, detail)
+	]);
+}
+
+function interfaceCards(interfaces) {
+	if (!interfaces || !interfaces.length)
+		return E('p', { 'class': 'mwan3-nat6-note' }, _('目前沒有可顯示的 WAN 狀態。'));
+
+	return E('div', { 'class': 'mwan3-nat6-wan-grid' }, interfaces.map(function(item) {
+		var tone = interfaceTone(item);
+		var errors = Number(item.rx_errors || 0) + Number(item.tx_errors || 0);
+		var dropped = Number(item.rx_dropped || 0) + Number(item.tx_dropped || 0);
+
+		return E('article', { 'class': 'mwan3-nat6-wan ' + tone }, [
+			E('div', { 'class': 'mwan3-nat6-wan-head' }, [
+				E('div', {}, [
+					E('h4', {}, item.label || item.logical || '-'),
+					E('div', { 'class': 'mwan3-nat6-identity' },
+						'%s · %s'.format(item.logical || '-', item.device || '-'))
+				]),
+				badge(stateLabel(item.state), tone)
 			]),
-			E('td', { 'class': 'td' }, stateLabel(item.state)),
-			E('td', { 'class': 'td' }, trackerLabel(item.tracker)),
-			E('td', { 'class': 'td' }, item.prefix || '-'),
-			E('td', { 'class': 'td' },
-				'%s / %s'.format(formatBytes(item.rx_bytes), formatBytes(item.tx_bytes))),
-			E('td', { 'class': 'td' },
-				'%s / %s'.format(
-					Number(item.rx_errors || 0) + Number(item.tx_errors || 0),
-					Number(item.rx_dropped || 0) + Number(item.tx_dropped || 0)))
-		]));
-	});
+			E('div', { 'class': 'mwan3-nat6-prefix' }, item.prefix || '-'),
+			E('div', { 'class': 'mwan3-nat6-data-grid' }, [
+				E('div', {}, [
+					E('span', { 'class': 'mwan3-nat6-data-label' }, _('mwan3 追蹤')),
+					E('span', { 'class': 'mwan3-nat6-data-value' }, trackerLabel(item.tracker))
+				]),
+				E('div', {}, [
+					E('span', { 'class': 'mwan3-nat6-data-label' }, _('接收 / 傳送')),
+					E('span', { 'class': 'mwan3-nat6-data-value' },
+						'%s / %s'.format(formatBytes(item.rx_bytes), formatBytes(item.tx_bytes)))
+				]),
+				E('div', {}, [
+					E('span', { 'class': 'mwan3-nat6-data-label' }, _('錯誤')),
+					E('span', { 'class': 'mwan3-nat6-data-value' }, String(errors))
+				]),
+				E('div', {}, [
+					E('span', { 'class': 'mwan3-nat6-data-label' }, _('丟棄')),
+					E('span', { 'class': 'mwan3-nat6-data-value' }, String(dropped))
+				])
+			])
+		]);
+	}));
+}
 
-	return table;
+function detailCard(title, content) {
+	return E('div', { 'class': 'mwan3-nat6-detail' }, [
+		E('h4', {}, title),
+		E('p', {}, content)
+	]);
+}
+
+function sectionCard(title, description, content) {
+	return E('section', { 'class': 'mwan3-nat6-section' }, [
+		E('div', { 'class': 'mwan3-nat6-section-head' }, [
+			E('div', {}, [
+				E('h3', {}, title),
+				E('p', { 'class': 'mwan3-nat6-section-intro' }, description)
+			])
+		]),
+		content
+	]);
 }
 
 function comparisonTable(activeWanCount, configuredWanCount) {
@@ -209,6 +308,13 @@ return view.extend({
 		var localIcmpHealthy = !localIcmp.enabled || localIcmp.profile === 'managed';
 		var applyAllowed = status.ready && nat.profile !== 'unexpected' && localIcmp.profile !== 'unexpected';
 		var healthy = status.ok && status.ready && status.policy_ready !== false && nat.profile === 'managed' && localIcmpHealthy;
+		var tone = healthy && !degraded ? 'good' : (status.ok && status.ready ? 'warning' : 'danger');
+		var headline = healthy && !degraded
+			? _('所有線路皆正常')
+			: (healthy ? _('部分線路暫時排除') : _('NAT6 需要檢查'));
+		var heroBadge = healthy && !degraded
+			? _('運作正常')
+			: (healthy ? _('部分可用') : _('需要處理'));
 		var summary = healthy && degraded
 			? _('%d / %d 條已設定的 WAN 已就緒。NAT6 會繼續服務目前就緒的 WAN；無法使用的 WAN 將暫時排除，待恢復後再自動加入。').format(activeWanCount, wanCount)
 			: (healthy
@@ -216,51 +322,66 @@ return view.extend({
 			: (status.ok && status.ready && nat.profile === 'managed' && status.policy_ready === false
 				? _('就緒 WAN 的 NAT6 規則已是最新狀態，但其中一個受追蹤的 mwan3 成員目前離線。')
 				: _('NAT6 需要處理。套用前請檢查 WAN 設定、安全檢查與目前的規則狀態。')));
-		var error = status.ok ? null : E('p', {}, [
+		var error = status.ok ? null : E('p', { 'class': 'mwan3-nat6-error' }, [
 			errorLabel(status.error),
 			' ',
 			E('a', { 'href': L.url('admin/network/mwan3-nat6/settings') }, _('開啟 WAN 設定'))
 		]);
 
-		return E('div', {}, [
-			E('h2', {}, _('mwan3 多 WAN NAT6')),
-			E('div', { 'class': healthy && !degraded ? 'alert-message success' : 'alert-message warning' }, [ summary, error ]),
-			E('div', { 'class': 'cbi-section' }, [
-				E('h3', {}, _('WAN 與流量計數')),
-				E('p', {}, _('計數值會持續累加。比較策略時，請在相同的多連線負載前後記錄差值。')),
-				interfaceTable(status.interfaces)
-			]),
-			E('div', { 'class': 'cbi-section' }, [
-				E('h3', {}, _('已安裝的 NAT6 規則')),
-				E('p', {}, [
-					_('資料表：'), E('strong', {}, nat.table || '-'), ' — ',
-					_('偵測到的規則狀態：'), E('strong', {}, profileLabel(nat.profile)), ' — ',
-					_('%d / %d 條預期規則').format(
-						Number(nat.rule_count || 0), Number(nat.expected_rule_count || 0))
+		return E('div', { 'id': 'mwan3-nat6-dashboard' }, [
+			dashboardStyles(),
+			E('header', { 'class': 'mwan3-nat6-hero ' + tone, 'role': 'status', 'aria-live': 'polite' }, [
+				E('div', { 'class': 'mwan3-nat6-hero-content' }, [
+					E('p', { 'class': 'mwan3-nat6-eyebrow' }, _('IPv6 多 WAN 前綴轉換')),
+					E('div', { 'class': 'mwan3-nat6-title-row' }, [
+						E('h2', {}, headline),
+						badge(heroBadge, tone)
+					]),
+					E('p', { 'class': 'mwan3-nat6-summary' }, summary),
+					error
 				])
 			]),
-			E('div', { 'class': 'cbi-section' }, [
-				E('h3', {}, _('路由器本機的裝置綁定')),
-				E('p', {}, localIcmp.enabled
-					? _('已啟用：精確 ICMPv6 規則 %d / %d 條、初始路由規則 %d / %d 條；略過標記為 %s，RPDB 優先序為 %d，狀態為 %s。').format(
-						Number(localIcmp.rule_count || 0), Number(localIcmp.expected_rule_count || 0),
-						Number(localIcmp.routing_rule_count || 0), Number(localIcmp.expected_routing_rule_count || 0),
-						localIcmp.mark || '-', Number(localIcmp.routing_priority || 0), localIcmp.profile || 'unknown')
-					: _('未啟用。路由器本機的指定裝置診斷仍依照現有 mwan3/OpenClash 策略。'))
+			E('div', { 'class': 'mwan3-nat6-metric-grid', 'aria-label': _('運作概況') }, [
+				metricCard(_('就緒 WAN'), '%d / %d'.format(activeWanCount, wanCount),
+					activeWanCount === wanCount ? _('全部已設定線路均可用') : _('%d 條線路暫時排除').format(wanCount - activeWanCount)),
+				metricCard(_('NAT6 規則'), '%d / %d'.format(Number(nat.rule_count || 0), Number(nat.expected_rule_count || 0)),
+					profileLabel(nat.profile)),
+				metricCard(_('本機路由'), localIcmp.enabled ? _('已啟用') : _('未啟用'),
+					localIcmp.enabled ? _('%d / %d 條路由規則').format(
+						Number(localIcmp.routing_rule_count || 0), Number(localIcmp.expected_routing_rule_count || 0)) : _('依照現有 mwan3 策略')),
+				metricCard(_('自動監看'), monitor.enabled ? _('運作中') : _('未啟用'),
+					monitor.enabled ? _('每 %d 秒 · %d 個穩定樣本').format(
+						Number(monitor.interval || 0), Number(monitor.debounce || 0)) : _('規則只會手動更新'))
 			]),
-			E('div', { 'class': 'cbi-section' }, [
-				E('h3', {}, _('自動更新監看狀態')),
-				E('p', {}, monitor.enabled
-					? _('已啟用：每 %d 秒檢查一次，連續 %d 個樣本穩定後動作；mwan3 追蹤器更新為%s。').format(
-						Number(monitor.interval || 0), Number(monitor.debounce || 0),
-						monitor.refresh_mwan3 ? _('已啟用') : _('已停用'))
-					: _('未啟用。在「WAN 設定」中啟用監看前，只能手動套用規則。'))
-			]),
-			E('div', { 'class': 'cbi-section' }, [
-				E('h3', {}, _('分流方式')),
-				comparisonTable(activeWanCount, wanCount),
-				E('p', {}, _('N 條就緒的 WAN 會產生 N² 條 NAT 規則。前綴 NAT 無法合併單一 TCP 或 QUIC 連線；mwan3 會分配不同連線，而本頁面絕不變更 mwan3 權重。'))
-			]),
+			sectionCard(_('WAN 與流量計數'),
+				_('快速查看每條線路的連線、追蹤、前綴與累計流量。比較策略時，請記錄相同多連線負載前後的差值。'),
+				interfaceCards(status.interfaces)),
+			sectionCard(_('規則與自動化'),
+				_('這些功能只管理本套件的專屬規則，不會變更 mwan3 權重。'),
+				E('div', { 'class': 'mwan3-nat6-detail-grid' }, [
+					detailCard(_('已安裝的 NAT6 規則'), [
+						_('資料表：'), E('strong', {}, nat.table || '-'), E('br'),
+						_('偵測到的規則狀態：'), E('strong', {}, profileLabel(nat.profile)), E('br'),
+						_('%d / %d 條預期規則').format(Number(nat.rule_count || 0), Number(nat.expected_rule_count || 0))
+					]),
+					detailCard(_('路由器本機的裝置綁定'), localIcmp.enabled
+						? _('已啟用：精確 ICMPv6 規則 %d / %d 條、初始路由規則 %d / %d 條；略過標記為 %s，RPDB 優先序為 %d，狀態為 %s。').format(
+							Number(localIcmp.rule_count || 0), Number(localIcmp.expected_rule_count || 0),
+							Number(localIcmp.routing_rule_count || 0), Number(localIcmp.expected_routing_rule_count || 0),
+							localIcmp.mark || '-', Number(localIcmp.routing_priority || 0), localIcmp.profile || 'unknown')
+						: _('未啟用。路由器本機的指定裝置診斷仍依照現有 mwan3/OpenClash 策略。')),
+					detailCard(_('自動更新監看狀態'), monitor.enabled
+						? _('已啟用：每 %d 秒檢查一次，連續 %d 個樣本穩定後動作；mwan3 追蹤器更新為%s。').format(
+							Number(monitor.interval || 0), Number(monitor.debounce || 0),
+							monitor.refresh_mwan3 ? _('已啟用') : _('已停用'))
+						: _('未啟用。在「WAN 設定」中啟用監看前，只能手動套用規則。'))
+				])),
+			sectionCard(_('分流方式'),
+				_('多條獨立連線可以分散到不同 WAN；單一連線仍只會使用一條線路。'),
+				E('div', { 'class': 'mwan3-nat6-comparison' }, [
+					comparisonTable(activeWanCount, wanCount),
+					E('p', { 'class': 'mwan3-nat6-note' }, _('N 條就緒的 WAN 會產生 N² 條 NAT 規則。前綴 NAT 無法合併單一 TCP 或 QUIC 連線；mwan3 會分配不同連線，而本頁面絕不變更 mwan3 權重。'))
+				])),
 			E('div', { 'class': 'cbi-page-actions' }, [
 				E('a', { 'class': 'btn cbi-button-neutral', 'href': L.url('admin/network/mwan3-nat6/settings') }, _('設定 WAN')),
 				' ',

@@ -1,9 +1,9 @@
 # English language pack for the Traditional Chinese mwan3-nat6 interface.
-# Generated from the fixed 0.0.41 Traditional Chinese source strings.
+# Generated from the fixed 0.0.47 Traditional Chinese source strings.
 msgid ""
 msgstr ""
-"Project-Id-Version: mwan3-nat6 0.0.41\n"
-"PO-Revision-Date: 2026-08-30 00:00+0000\n"
+"Project-Id-Version: mwan3-nat6 0.0.47\n"
+"PO-Revision-Date: 2026-09-05 00:00+0000\n"
 "Last-Translator: mwan3-nat6 <mwan3-nat6@users.noreply.github.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -491,3 +491,111 @@ msgstr "Expected egress device"
 #: settings.js
 msgid "顯示名稱"
 msgstr "Label"
+
+#: status.js
+msgid "%d / %d 條路由規則"
+msgstr "%d of %d routing rules"
+
+#: status.js
+msgid "%d 條線路暫時排除"
+msgstr "%d links temporarily excluded"
+
+#: status.js
+msgid "IPv6 多 WAN 前綴轉換"
+msgstr "IPv6 multi-WAN prefix translation"
+
+#: status.js
+msgid "NAT6 規則"
+msgstr "NAT6 rules"
+
+#: status.js
+msgid "NAT6 需要檢查"
+msgstr "NAT6 needs attention"
+
+#: status.js
+msgid "丟棄"
+msgstr "Drops"
+
+#: status.js
+msgid "依照現有 mwan3 策略"
+msgstr "Uses the existing mwan3 policy"
+
+#: status.js
+msgid "全部已設定線路均可用"
+msgstr "All configured links are available"
+
+#: status.js
+msgid "快速查看每條線路的連線、追蹤、前綴與累計流量。比較策略時，請記錄相同多連線負載前後的差值。"
+msgstr "Review connectivity, tracking, prefixes, and cumulative traffic for each link. When comparing policies, record deltas around the same multi-connection workload."
+
+#: status.js
+msgid "所有線路皆正常"
+msgstr "All links are healthy"
+
+#: status.js
+msgid "本機路由"
+msgstr "Local routing"
+
+#: status.js
+msgid "目前沒有可顯示的 WAN 狀態。"
+msgstr "There is no WAN status to display."
+
+#: status.js
+msgid "未啟用"
+msgstr "Disabled"
+
+#: status.js
+msgid "每 %d 秒 · %d 個穩定樣本"
+msgstr "Every %d seconds · %d stable samples"
+
+#: status.js
+msgid "自動監看"
+msgstr "Automatic monitoring"
+
+#: status.js
+msgid "規則只會手動更新"
+msgstr "Rules are updated manually only"
+
+#: status.js
+msgid "規則與自動化"
+msgstr "Rules and automation"
+
+#: status.js
+msgid "這些功能只管理本套件的專屬規則，不會變更 mwan3 權重。"
+msgstr "These features manage only this package's dedicated rules and do not change mwan3 weights."
+
+#: status.js
+msgid "運作中"
+msgstr "Running"
+
+#: status.js
+msgid "運作概況"
+msgstr "Operational overview"
+
+#: status.js
+msgid "運作正常"
+msgstr "Healthy"
+
+#: status.js
+msgid "部分可用"
+msgstr "Partially available"
+
+#: status.js
+msgid "部分線路暫時排除"
+msgstr "Some links are temporarily excluded"
+
+#: status.js
+msgid "需要處理"
+msgstr "Needs attention"
+
+#: status.js
+msgid "就緒 WAN"
+msgstr "Ready WANs"
+
+#: status.js
+msgid "多條獨立連線可以分散到不同 WAN；單一連線仍只會使用一條線路。"
+msgstr "Separate connections can be distributed across WANs; a single connection still uses only one link."
+
+#: status.js
+msgid "錯誤"
+msgstr "Errors"

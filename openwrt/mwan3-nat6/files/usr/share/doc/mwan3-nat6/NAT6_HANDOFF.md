@@ -16,14 +16,14 @@ proxy 或提供單一連線頻寬綁定。獨立更新監看與路由器本機�
 在使用 apk 的 OpenWrt 25.12 以上版本，安裝核心與 LuCI：
 
 ```sh
-apk --no-network add mwan3-nat6-0.0.41-r1.apk
-apk --no-network add luci-app-mwan3-nat6-0.0.41-r1.apk
+apk --no-network add mwan3-nat6-0.0.47-r1.apk
+apk --no-network add luci-app-mwan3-nat6-0.0.47-r1.apk
 ```
 
 LuCI 預設使用正體中文。如需英文，再安裝同版本的獨立語言包：
 
 ```sh
-apk --no-network add luci-i18n-mwan3-nat6-en-0.0.41-r1.apk
+apk --no-network add luci-i18n-mwan3-nat6-en-0.0.47-r1.apk
 ```
 
 英文包只會加入可選語言，不會自動切換目前 LuCI 語言。舊版 opkg 系統

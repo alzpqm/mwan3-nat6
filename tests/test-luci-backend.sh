@@ -113,6 +113,17 @@ grep -Fq "localIcmp.profile !== 'unexpected'" "$VIEW" ||
 	fail 'LuCI status view does not block Apply for unexpected local state'
 grep -Fq 'active_wan_count' "$VIEW" || fail 'LuCI status view lacks ready-subset state'
 grep -Fq 'item.tracker' "$VIEW" || fail 'LuCI status view lacks mwan3 tracker state'
+grep -Fq "'id': 'mwan3-nat6-dashboard'" "$VIEW" ||
+	fail 'LuCI status view lacks the scoped dashboard root'
+grep -Fq 'mwan3-nat6-metric-grid' "$VIEW" ||
+	fail 'LuCI status view lacks the health metric grid'
+grep -Fq 'mwan3-nat6-wan-grid' "$VIEW" ||
+	fail 'LuCI status view lacks responsive WAN cards'
+grep -Fq "'aria-live': 'polite'" "$VIEW" ||
+	fail 'LuCI status summary lacks an accessible live region'
+if grep -Eq '(^|})[[:space:]]*\.cbi-section[[:space:]]*\{' "$VIEW"; then
+	fail 'LuCI dashboard style escapes its package scope'
+fi
 if command -v node >/dev/null 2>&1; then
 	node --check "$VIEW" >/dev/null
 	node --check "$SETTINGS" >/dev/null
