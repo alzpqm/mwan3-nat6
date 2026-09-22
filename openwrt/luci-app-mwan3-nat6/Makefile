@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-mwan3-nat6
-PKG_VERSION:=0.0.47
+PKG_VERSION:=0.0.49
 PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0-only
 PKG_BUILD_DEPENDS:=luci-base/host

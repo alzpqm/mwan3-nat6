@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAT6 LuCI layout regression</title>
+<link rel="stylesheet" href="/upstream/bootstrap.css">
+<style>
+  #fixture-topbar { flex-shrink: 0; min-height: 42px; }
+  #fixture-nav { position: relative; padding: 8px 16px; }
+  #fixture-menu { position: absolute; top: 100%; left: 0; width: 230px; background: white; color: black; padding: 12px; box-shadow: 0 2px 10px #555; }
+  #fixture-menu a { display: block; padding: 12px; color: #222; }
+  #fixture-main { width: 100%; min-width: 0; }
+  #fixture-result { white-space: pre-wrap; padding: 12px; }
+</style>
+<header id="fixture-topbar">
+  <nav id="fixture-nav"><button id="fixture-open" type="button">OpenWrt 網路選單</button>
+    <div id="fixture-menu" hidden><a href="#interfaces">介面</a><a id="fixture-target" href="#firewall">防火牆選項</a><a href="#routes">路由</a></div>
+  </nav>
+</header>
+<main id="fixture-main"></main>
+<pre id="fixture-result">載入實際 status.js 與 Bootstrap 主題…</pre>
+<script>
+'use strict';
+const query = new URLSearchParams(location.search);
+String.prototype.format = function(...args) { let i = 0; return this.replace(/%[sd]/g, () => String(args[i++])); };
+function E(tag, attrs, children) {
+  if (arguments.length === 2 && (typeof attrs !== 'object' || Array.isArray(attrs))) { children = attrs; attrs = {}; }
+  const node = document.createElement(tag);
+  for (const [name, value] of Object.entries(attrs || {})) {
+    if (typeof value === 'function') node.addEventListener(name, value);
+    else if (value != null) node.setAttribute(name, value);
+  }
+  for (const child of [].concat(children == null ? [] : children)) {
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+const state = {
+  ok: true, ready: true, all_ready: true, degraded: false, policy_ready: true,
+  nat: { table: 'mwan3_nat6', wan_count: 3, active_wan_count: 3, rule_count: 9, expected_rule_count: 9, profile: 'managed' },
+  local_icmp: { enabled: false, profile: 'disabled' }, monitor: { enabled: true, interval: 15, debounce: 2 },
+  interfaces: [1, 2, 3].map(i => ({ label: 'WAN ' + i, logical: 'wan' + i + '_6', device: 'pppoe-wan' + i,
+    state: 'ready', prefix: '2001:db8:' + i + ':100::/56', rx_bytes: 123456789, tx_bytes: 1234567,
+    tracker: { tracked: true, state: 'online', score: 10 } }))
+};
+const menu = document.getElementById('fixture-menu');
+document.getElementById('fixture-open').onclick = () => { menu.hidden = !menu.hidden; };
+const L = { hasViewPermission: () => true, url: () => '#fixture-settings', resolveDefault: (p, fallback) => p.catch(() => fallback) };
+const ui = { createHandlerFn: (view, name) => view[name].bind(view), addNotification() {} };
+const rpc = { declare: () => () => Promise.resolve(state) };
+fetch(query.get('source') === 'before' ? '/before.js' : '/status.js').then(r => r.text()).then(source => {
+  const view = new Function('rpc', 'ui', 'view', 'E', 'L', '_', source)(rpc, ui, { extend: v => v }, E, L, v => v);
+  document.getElementById('fixture-main').append(view.render(state));
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    menu.hidden = false;
+    const target = document.getElementById('fixture-target');
+    const rect = target.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    const menuClickable = hit === target || target.contains(hit);
+    const overflow = document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    const hero = document.querySelector('.mwan3-nat6-hero');
+    const result = { source: query.get('source') || 'after', width: innerWidth, menuClickable, overflow,
+      heroTag: hero.tagName, heroZIndex: getComputedStyle(hero).zIndex, hit: hit && (hit.className || hit.tagName) };
+    document.getElementById('fixture-result').textContent = JSON.stringify(result, null, 2);
+    parent.postMessage({ nat6LayoutResult: result }, location.origin);
+  }));
+}).catch(error => { document.getElementById('fixture-result').textContent = String(error); });
+</script>
+</html>

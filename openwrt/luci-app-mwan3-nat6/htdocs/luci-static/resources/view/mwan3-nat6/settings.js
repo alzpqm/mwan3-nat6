@@ -62,14 +62,14 @@ return view.extend({
 
 		option = globals.option(form.Value, 'interval', _('檢查間隔'));
 		option.default = '15';
-		option.datatype = 'range(5,3600)';
+		option.datatype = 'and(uinteger,range(5,3600))';
 		option.rmempty = false;
 		option.depends('monitor', '1');
 		option.description = _('每次唯讀檢查 netifd 與 nftables 之間的間隔秒數。');
 
 		option = globals.option(form.Value, 'debounce', _('穩定樣本數'));
 		option.default = '2';
-		option.datatype = 'range(1,10)';
+		option.datatype = 'and(uinteger,range(1,10))';
 		option.rmempty = false;
 		option.depends('monitor', '1');
 		option.description = _('連續取得指定數量且內容相同的就緒狀態後，才會更新規則。');
@@ -109,18 +109,18 @@ return view.extend({
 
 		option = wans.option(form.Value, 'expected_prefix_length', _('預期的 PD 長度'));
 		option.optional = true;
-		option.datatype = 'range(3,64)';
+		option.datatype = 'and(uinteger,range(3,64))';
 		option.placeholder = '56';
 		option.description = _('選用的安全檢查；留空時接受目前委派前綴的長度。');
 
 		option = wans.option(form.Value, 'address_index', _('WAN 位址索引'));
 		option.default = '0';
-		option.datatype = 'range(0,15)';
+		option.datatype = 'and(uinteger,range(0,15))';
 		option.rmempty = false;
 
 		option = wans.option(form.Value, 'prefix_index', _('委派前綴索引'));
 		option.default = '0';
-		option.datatype = 'range(0,15)';
+		option.datatype = 'and(uinteger,range(0,15))';
 		option.rmempty = false;
 
 		return map.render();

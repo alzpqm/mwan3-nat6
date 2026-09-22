@@ -9,6 +9,7 @@ check:
 	@sh tests/test-nft-nat6.sh
 	@sh tests/test-watch.sh
 	@sh tests/test-luci-backend.sh
+	@node tests/test-luci-frontend.js
 	@sh tests/test-localization.sh
 	@sh tests/test-comparison.sh
 	@sh tests/test-live-chain-normalize.sh

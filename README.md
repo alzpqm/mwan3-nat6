@@ -4,7 +4,7 @@
 mwan3 負責為每條連線選擇送出介面，本套件則把來源位址轉換成該介面
 可路由的委派前綴，兩者各自處理不同工作。
 
-0.0.47 支援 2 至 32 條 IPv6 WAN，並提供 LuCI 設定頁、netifd／mwan3
+0.0.49 支援 2 至 32 條 IPv6 WAN，並提供 LuCI 設定頁、netifd／mwan3
 追蹤狀態、流量計數、受保護的手動套用，以及選用的自動更新監看。
 
 ## 語言
@@ -13,7 +13,7 @@ mwan3 負責為每條連線選擇送出介面，本套件則把來源位址轉�
 英文介面，請另外安裝同版本的選用套件：
 
 ```sh
-apk --no-network add luci-i18n-mwan3-nat6-en-0.0.47-r1.apk
+apk --no-network add luci-i18n-mwan3-nat6-en-0.0.49-r1.apk
 ```
 
 英文包只會把 English 加入 LuCI 的語言選單，不會擅自變更目前使用的
@@ -170,6 +170,17 @@ WAN 中斷或恢復後，會在 debounce 完成時縮減或擴充就緒子集。
 ```sh
 make check
 ```
+
+桌面與手機寬度的 LuCI 選單遮擋測試，可另以 Node.js 18 以上執行：
+
+```sh
+node tests/serve-luci-layout.js
+```
+
+在瀏覽器開啟輸出的本機網址，確認 `menuClickable=true`、`overflow=false`，
+並實際點選頂部的「防火牆選項」。可加上舊版 `status.js` 路徑作為唯一
+參數比較修正前後。此測試下載官方 Bootstrap CSS 並使用模擬狀態資料，
+不能取代登入實際路由器後的驗收。
 
 使用 OpenWrt 25.12 以上版本的 SDK 建置核心、LuCI 與英文語言包三個 APK：
 

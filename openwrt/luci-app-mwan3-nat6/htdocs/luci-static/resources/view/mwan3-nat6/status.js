@@ -73,6 +73,9 @@ function trackerLabel(tracker) {
 
 function errorLabel(error) {
 	var labels = {
+		'status-failed': _('無法取得 NAT6 狀態，請檢查連線後重新整理。'),
+		'status-failed-check-logread': _('無法取得 NAT6 狀態，請執行 logread -e nft-nat6 查看記錄。'),
+		'nft-nat6-script-missing': _('找不到 NAT6 核心程式，請檢查主套件是否已正確安裝。'),
 		'required-command-missing': _('路由器缺少必要指令。'),
 		'no-wans': _('尚未設定任何 WAN。'),
 		'too-few-wans': _('至少要啟用兩條 WAN。'),
@@ -105,7 +108,7 @@ function dashboardStyles() {
 	return E('style', {}, [
 		'#mwan3-nat6-dashboard{--nat6-accent:#2563eb;--nat6-accent-2:#0f766e;--nat6-good:#059669;--nat6-warn:#d97706;--nat6-bad:#dc2626;--nat6-line:rgba(127,127,127,.24);--nat6-soft:rgba(127,127,127,.08);max-width:1180px;margin:0 auto}',
 		'#mwan3-nat6-dashboard *{box-sizing:border-box}',
-		'#mwan3-nat6-dashboard .mwan3-nat6-hero{position:relative;overflow:hidden;margin:0 0 1.25rem;padding:1.5rem;border-radius:1rem;background:linear-gradient(135deg,#173a8a 0%,#146b76 100%);box-shadow:0 12px 32px rgba(15,23,42,.18);color:#fff}',
+		'#mwan3-nat6-dashboard .mwan3-nat6-hero{position:relative;isolation:isolate;overflow:hidden;margin:0 0 1.25rem;padding:1.5rem;border-radius:1rem;background:linear-gradient(135deg,#173a8a 0%,#146b76 100%);box-shadow:0 12px 32px rgba(15,23,42,.18);color:#fff}',
 		'#mwan3-nat6-dashboard .mwan3-nat6-hero:after{content:"";position:absolute;right:-4rem;bottom:-6rem;width:16rem;height:16rem;border:2.5rem solid rgba(255,255,255,.08);border-radius:50%}',
 		'#mwan3-nat6-dashboard .mwan3-nat6-hero-content{position:relative;z-index:1;max-width:780px}',
 		'#mwan3-nat6-dashboard .mwan3-nat6-eyebrow{margin:0 0 .45rem;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.82}',
@@ -277,6 +280,9 @@ return view.extend({
 	},
 
 	handleApply: function(ev) {
+		if (!L.hasViewPermission())
+			return Promise.resolve();
+
 		var button = ev.currentTarget;
 		button.disabled = true;
 		button.classList.add('spinning');
@@ -305,8 +311,9 @@ return view.extend({
 		var wanCount = Number(nat.wan_count || 0);
 		var activeWanCount = Number(nat.active_wan_count || 0);
 		var degraded = status.degraded === true || activeWanCount < wanCount;
-		var localIcmpHealthy = !localIcmp.enabled || localIcmp.profile === 'managed';
-		var applyAllowed = status.ready && nat.profile !== 'unexpected' && localIcmp.profile !== 'unexpected';
+		var localIcmpHealthy = localIcmp.enabled
+			? localIcmp.profile === 'managed' : localIcmp.profile === 'disabled';
+		var applyAllowed = L.hasViewPermission() && status.ok && status.ready && nat.profile !== 'unexpected' && localIcmp.profile !== 'unexpected';
 		var healthy = status.ok && status.ready && status.policy_ready !== false && nat.profile === 'managed' && localIcmpHealthy;
 		var tone = healthy && !degraded ? 'good' : (status.ok && status.ready ? 'warning' : 'danger');
 		var headline = healthy && !degraded
@@ -322,7 +329,7 @@ return view.extend({
 			: (status.ok && status.ready && nat.profile === 'managed' && status.policy_ready === false
 				? _('就緒 WAN 的 NAT6 規則已是最新狀態，但其中一個受追蹤的 mwan3 成員目前離線。')
 				: _('NAT6 需要處理。套用前請檢查 WAN 設定、安全檢查與目前的規則狀態。')));
-		var error = status.ok ? null : E('p', { 'class': 'mwan3-nat6-error' }, [
+		var error = status.ok ? '' : E('p', { 'class': 'mwan3-nat6-error' }, [
 			errorLabel(status.error),
 			' ',
 			E('a', { 'href': L.url('admin/network/mwan3-nat6/settings') }, _('開啟 WAN 設定'))
@@ -330,7 +337,8 @@ return view.extend({
 
 		return E('div', { 'id': 'mwan3-nat6-dashboard' }, [
 			dashboardStyles(),
-			E('header', { 'class': 'mwan3-nat6-hero ' + tone, 'role': 'status', 'aria-live': 'polite' }, [
+			// LuCI themes use the global header selector for their top navigation.
+			E('div', { 'class': 'mwan3-nat6-hero ' + tone, 'role': 'status', 'aria-live': 'polite' }, [
 				E('div', { 'class': 'mwan3-nat6-hero-content' }, [
 					E('p', { 'class': 'mwan3-nat6-eyebrow' }, _('IPv6 多 WAN 前綴轉換')),
 					E('div', { 'class': 'mwan3-nat6-title-row' }, [
@@ -346,10 +354,10 @@ return view.extend({
 					activeWanCount === wanCount ? _('全部已設定線路均可用') : _('%d 條線路暫時排除').format(wanCount - activeWanCount)),
 				metricCard(_('NAT6 規則'), '%d / %d'.format(Number(nat.rule_count || 0), Number(nat.expected_rule_count || 0)),
 					profileLabel(nat.profile)),
-				metricCard(_('本機路由'), localIcmp.enabled ? _('已啟用') : _('未啟用'),
+				metricCard(_('本機路由'), !localIcmpHealthy ? _('需要處理') : (localIcmp.enabled ? _('已啟用') : _('未啟用')),
 					localIcmp.enabled ? _('%d / %d 條路由規則').format(
-						Number(localIcmp.routing_rule_count || 0), Number(localIcmp.expected_routing_rule_count || 0)) : _('依照現有 mwan3 策略')),
-				metricCard(_('自動監看'), monitor.enabled ? _('運作中') : _('未啟用'),
+						Number(localIcmp.routing_rule_count || 0), Number(localIcmp.expected_routing_rule_count || 0)) : (localIcmpHealthy ? _('依照現有 mwan3 策略') : _('仍有待檢查的本機路由規則'))),
+				metricCard(_('自動監看'), monitor.enabled ? _('已啟用') : _('未啟用'),
 					monitor.enabled ? _('每 %d 秒 · %d 個穩定樣本').format(
 						Number(monitor.interval || 0), Number(monitor.debounce || 0)) : _('規則只會手動更新'))
 			]),
@@ -369,12 +377,14 @@ return view.extend({
 							Number(localIcmp.rule_count || 0), Number(localIcmp.expected_rule_count || 0),
 							Number(localIcmp.routing_rule_count || 0), Number(localIcmp.expected_routing_rule_count || 0),
 							localIcmp.mark || '-', Number(localIcmp.routing_priority || 0), localIcmp.profile || 'unknown')
-						: _('未啟用。路由器本機的指定裝置診斷仍依照現有 mwan3/OpenClash 策略。')),
+						: (localIcmpHealthy ? _('未啟用。路由器本機的指定裝置診斷仍依照現有 mwan3/OpenClash 策略。')
+							: _('設定已停用，但仍有本機路由規則或無法辨識的狀態，請檢查後再套用。'))),
 					detailCard(_('自動更新監看狀態'), monitor.enabled
 						? _('已啟用：每 %d 秒檢查一次，連續 %d 個樣本穩定後動作；mwan3 追蹤器更新為%s。').format(
 							Number(monitor.interval || 0), Number(monitor.debounce || 0),
 							monitor.refresh_mwan3 ? _('已啟用') : _('已停用'))
-						: _('未啟用。在「WAN 設定」中啟用監看前，只能手動套用規則。'))
+						: _('未啟用。在「WAN 設定」中啟用監看前，只能手動套用規則。')),
+					E('p', { 'class': 'mwan3-nat6-note' }, _('此處顯示監看設定，不代表服務目前正在執行。'))
 				])),
 			sectionCard(_('分流方式'),
 				_('多條獨立連線可以分散到不同 WAN；單一連線仍只會使用一條線路。'),
@@ -386,14 +396,17 @@ return view.extend({
 				E('a', { 'class': 'btn cbi-button-neutral', 'href': L.url('admin/network/mwan3-nat6/settings') }, _('設定 WAN')),
 				' ',
 				E('button', {
+					'type': 'button',
 					'class': 'btn cbi-button-neutral',
 					'click': function() { window.location.reload(); }
 				}, _('重新整理')),
 				' ',
 				E('button', {
+					'type': 'button',
 					'class': 'btn cbi-button-action important',
 					'disabled': applyAllowed ? null : 'disabled',
-					'title': applyAllowed ? '' : _('至少要有一條 WAN 就緒，而且現有規則鏈必須能安全辨識，才可套用。'),
+					'title': !L.hasViewPermission() ? _('目前帳號只有唯讀權限。')
+						: (applyAllowed ? '' : _('至少要有一條 WAN 就緒，而且現有規則鏈必須能安全辨識，才可套用。')),
 					'click': ui.createHandlerFn(this, 'handleApply')
 				}, _('套用 N-WAN 規則'))
 			])

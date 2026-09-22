@@ -1,8 +1,8 @@
 # English language pack for the Traditional Chinese mwan3-nat6 interface.
-# Generated from the fixed 0.0.47 Traditional Chinese source strings.
+# Generated from the fixed 0.0.49 Traditional Chinese source strings.
 msgid ""
 msgstr ""
-"Project-Id-Version: mwan3-nat6 0.0.47\n"
+"Project-Id-Version: mwan3-nat6 0.0.49\n"
 "PO-Revision-Date: 2026-09-05 00:00+0000\n"
 "Last-Translator: mwan3-nat6 <mwan3-nat6@users.noreply.github.com>\n"
 "Language-Team: English\n"
@@ -599,3 +599,31 @@ msgstr "Separate connections can be distributed across WANs; a single connection
 #: status.js
 msgid "錯誤"
 msgstr "Errors"
+
+#: status.js
+msgid "無法取得 NAT6 狀態，請檢查連線後重新整理。"
+msgstr "Unable to retrieve NAT6 status. Check the connection and refresh."
+
+#: status.js
+msgid "無法取得 NAT6 狀態，請執行 logread -e nft-nat6 查看記錄。"
+msgstr "Unable to retrieve NAT6 status. Run logread -e nft-nat6 to inspect the log."
+
+#: status.js
+msgid "找不到 NAT6 核心程式，請檢查主套件是否已正確安裝。"
+msgstr "The NAT6 core script is missing. Check that the core package is installed correctly."
+
+#: status.js
+msgid "仍有待檢查的本機路由規則"
+msgstr "Local routing rules still need attention"
+
+#: status.js
+msgid "設定已停用，但仍有本機路由規則或無法辨識的狀態，請檢查後再套用。"
+msgstr "The setting is disabled, but local routing rules or an unrecognized state remain. Inspect them before applying."
+
+#: status.js
+msgid "此處顯示監看設定，不代表服務目前正在執行。"
+msgstr "This shows the monitor configuration, not whether the service is currently running."
+
+#: status.js
+msgid "目前帳號只有唯讀權限。"
+msgstr "This account has read-only access."
